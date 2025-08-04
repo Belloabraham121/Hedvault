@@ -9,6 +9,7 @@ interface SwapInputProps {
   onValueChange?: (value: string) => void
   selectedAsset?: string
   onAssetSelect?: () => void
+  className?: string
 }
 
 export function SwapInput({
@@ -18,9 +19,10 @@ export function SwapInput({
   onValueChange,
   selectedAsset = "Select Asset",
   onAssetSelect,
+  className,
 }: SwapInputProps) {
   return (
-    <div className="p-4 rounded-lg bg-gray-800/50">
+    <div className={`p-4 rounded-lg bg-gray-800/50 ${className || ""}`}>
       <label className="text-sm text-gray-400 mb-2 block">{label}</label>
       <div className="flex items-center justify-between">
         <input
