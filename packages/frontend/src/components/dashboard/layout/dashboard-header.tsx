@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { Bell, Settings, Wallet } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Bell, Settings, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function DashboardHeader() {
   return (
@@ -17,10 +17,18 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-400 hover:text-white"
+          >
             <Bell className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-400 hover:text-white"
+          >
             <Settings className="h-4 w-4" />
           </Button>
           <Button className="bg-green-500 hover:bg-green-600 text-black">
@@ -30,5 +38,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
