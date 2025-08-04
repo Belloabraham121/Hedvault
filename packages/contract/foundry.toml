@@ -2,5 +2,20 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/=lib/openzeppelin-contracts/"
+]
+solc_version = "0.8.20"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+
+# Hedera Testnet Configuration
+[rpc_endpoints]
+testnet = "https://testnet.hashio.io/api"
+
+[etherscan]
+testnet = { key = "${ETHERSCAN_API_KEY}", chain = 296, url = "https://hashscan.io/testnet/" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
