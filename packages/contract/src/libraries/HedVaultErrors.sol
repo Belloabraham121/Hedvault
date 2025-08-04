@@ -98,6 +98,7 @@ library HedVaultErrors {
     error PriceDeviationTooHigh(uint256 deviation, uint256 threshold);
     error NoValidPriceFeeds(address token);
     error OracleCallFailed(address oracle);
+    error OracleUpdateFailed(address token);
     error EmergencyPriceExpired(address token);
     error AssetNotSupported(address asset);
     error SequencerDown();
