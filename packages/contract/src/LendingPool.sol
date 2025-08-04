@@ -12,6 +12,7 @@ import "./PriceOracle.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
+import "forge-std/console.sol";
 
 /**
  * @title LendingPool
@@ -449,15 +450,6 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             borrowAmount,
             loans[loanId].interestRate
         );
-
-        emit Events.LoanCreated(
-            loanId,
-            msg.sender,
-            collateralToken,
-            collateralAmount,
-            borrowAmount,
-            loans[loanId].interestRate
-        );
     }
 
     /**
@@ -534,8 +526,19 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             }
         }
 
-        // Update pool state
-        uint256 principalRepaid = amount - interestPortion;
+        // Update pool state - calculate actual principal repaid
+        uint256 principalRepaid;
+        if (amount >= totalDebt) {
+            // Full repayment - principal repaid is the original borrowAmount
+            principalRepaid = loan.borrowAmount;
+        } else {
+            // Partial repayment - calculate how much went to principal
+            if (amount <= loan.accruedInterest) {
+                principalRepaid = 0; // Only interest was paid
+            } else {
+                principalRepaid = amount - loan.accruedInterest; // Amount that went to principal
+            }
+        }
         pools[loan.borrowToken].totalBorrows -= principalRepaid;
 
         emit LoanRepaid(
@@ -582,17 +585,17 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             repayAmount
         );
 
-        if (collateralToSeize > loan.collateralAmount) {
-            collateralToSeize = loan.collateralAmount;
-        }
-
-        // Calculate liquidation bonus
+        // Calculate liquidation bonus on the base collateral amount
         uint256 liquidationBonus = (collateralToSeize *
             liquidationBonuses[loan.collateralToken]) / INTEREST_RATE_PRECISION;
         uint256 totalCollateralSeized = collateralToSeize + liquidationBonus;
 
+        // Cap total collateral seized to available collateral
         if (totalCollateralSeized > loan.collateralAmount) {
             totalCollateralSeized = loan.collateralAmount;
+            // Recalculate components proportionally
+            collateralToSeize = (totalCollateralSeized * INTEREST_RATE_PRECISION) / 
+                (INTEREST_RATE_PRECISION + liquidationBonuses[loan.collateralToken]);
             liquidationBonus = totalCollateralSeized - collateralToSeize;
         }
 
@@ -616,6 +619,9 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             IERC20(loan.borrowToken).safeTransfer(feeRecipient, liquidationFee);
         }
 
+        // Calculate principal repaid before updating loan state
+        uint256 principalRepaid = repayAmount > loan.accruedInterest ? repayAmount - loan.accruedInterest : 0;
+        
         // Update loan state
         if (repayAmount >= totalDebt) {
             loan.status = LoanStatus.LIQUIDATED;
@@ -632,12 +638,22 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             }
         } else {
             // Partial liquidation
-            loan.borrowAmount -= repayAmount;
+            // Calculate how much of the repayAmount goes to principal vs interest
+            uint256 interestPortion = loan.accruedInterest;
+            uint256 principalPortion = repayAmount > interestPortion ? repayAmount - interestPortion : 0;
+            
+            // Update loan amounts
+            if (repayAmount >= interestPortion) {
+                loan.accruedInterest = 0;
+                loan.borrowAmount -= principalPortion;
+            } else {
+                loan.accruedInterest -= repayAmount;
+            }
             loan.collateralAmount -= totalCollateralSeized;
         }
 
-        // Update pool state
-        pools[loan.borrowToken].totalBorrows -= repayAmount;
+        // Update pool state - only subtract principal portion from totalBorrows
+        pools[loan.borrowToken].totalBorrows -= principalRepaid;
 
         emit LoanLiquidated(
             loanId,
@@ -733,8 +749,8 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             collateralAmount
         );
         uint256 borrowValue = _getTokenValue(borrowToken, borrowAmount);
-        uint256 requiredCollateral = (borrowValue *
-            collateralFactors[collateralToken]) / INTEREST_RATE_PRECISION;
+        uint256 requiredCollateral = (borrowValue * INTEREST_RATE_PRECISION) /
+            collateralFactors[collateralToken];
 
         return collateralValue >= requiredCollateral;
     }
@@ -773,7 +789,10 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Check if loan is liquidatable
      */
-    function _isLoanLiquidatable(uint256 loanId) internal view returns (bool) {
+    function _isLoanLiquidatable(uint256 loanId) internal returns (bool) {
+        // Update loan interest first to ensure we have the latest debt amount
+        _updateLoanInterest(loanId);
+        
         LoanInfo storage loan = loans[loanId];
         uint256 collateralValue = _getTokenValue(
             loan.collateralToken,
@@ -783,10 +802,17 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             loan.borrowToken,
             loan.borrowAmount + loan.accruedInterest
         );
-        uint256 liquidationThreshold = (collateralValue *
-            loan.liquidationThreshold) / INTEREST_RATE_PRECISION;
+        
+        // A loan is liquidatable when health factor < 1.0
+        // Health factor = (collateralValue * liquidationThreshold) / (debtValue * INTEREST_RATE_PRECISION)
+        // Liquidatable when: (collateralValue * liquidationThreshold) < (debtValue * INTEREST_RATE_PRECISION)
+        uint256 liquidationThreshold = collateralFactors[loan.collateralToken];
+        uint256 adjustedCollateralValue = (collateralValue * liquidationThreshold) / INTEREST_RATE_PRECISION;
+        uint256 adjustedDebtValue = debtValue;
+        
 
-        return debtValue >= liquidationThreshold;
+        
+        return adjustedDebtValue > adjustedCollateralValue;
     }
 
     /**
@@ -810,7 +836,9 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     ) internal view returns (uint256) {
         (uint256 price, , ) = priceOracle.getPrice(token);
         uint8 decimals = IERC20Metadata(token).decimals();
-        return (amount * price) / (10 ** decimals);
+        // Oracle prices are in 8 decimals, so we need to scale properly
+        // Result should be in 18 decimals for consistency
+        return (amount * price * 10 ** 10) / (10 ** decimals);
     }
 
     /**
@@ -822,7 +850,9 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     ) internal view returns (uint256) {
         (uint256 price, , ) = priceOracle.getPrice(token);
         uint8 decimals = IERC20Metadata(token).decimals();
-        return (value * (10 ** decimals)) / price;
+        // Oracle prices are in 8 decimals, value is in 18 decimals
+        // So we need to adjust the calculation accordingly
+        return (value * (10 ** decimals)) / (price * 10 ** 10);
     }
 
     // ============ VIEW FUNCTIONS ============
@@ -931,8 +961,15 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
 
         if (debtValue == 0) return type(uint256).max;
         return
-            (collateralValue * loan.liquidationThreshold) /
+            (collateralValue * collateralFactors[loan.collateralToken]) /
             (debtValue * INTEREST_RATE_PRECISION);
+    }
+
+    /**
+     * @notice Update loan interest (for testing purposes)
+     */
+    function updateLoanInterest(uint256 loanId) external validLoan(loanId) {
+        _updateLoanInterest(loanId);
     }
 
     // ============ ADMIN FUNCTIONS ============
