@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IHedVaultCore.sol";
 import "./PriceOracle.sol";
+import "./RewardsDistributor.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
@@ -29,6 +30,7 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
     // Core protocol references
     IHedVaultCore public immutable hedVaultCore;
     PriceOracle public immutable priceOracle;
+    RewardsDistributor private rewardsDistributor;
 
     // Order structures
     struct Order {
@@ -258,6 +260,9 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
         priceOracle = PriceOracle(_priceOracle);
         feeRecipient = _feeRecipient;
 
+        // Initialize rewards distributor
+        _initializeRewards();
+
         // Set up roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MARKETPLACE_ADMIN_ROLE, msg.sender);
@@ -269,6 +274,35 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
         totalVolumeTraded = 0;
         totalTradesExecuted = 0;
         emergencyStop = false;
+    }
+
+    /**
+     * @notice Initialize rewards distributor connection
+     * @dev Gets RewardsDistributor address from HedVaultCore
+     */
+    function _initializeRewards() internal {
+        address rewardsAddr = hedVaultCore.rewardsDistributor();
+        if (rewardsAddr != address(0)) {
+            rewardsDistributor = RewardsDistributor(rewardsAddr);
+        }
+    }
+
+    /**
+     * @notice Distribute activity rewards to user
+     * @dev Safely calls RewardsDistributor without reverting main transaction
+     * @param user User to receive rewards
+     * @param activityType Type of activity ("marketplace")
+     * @param amount Amount of activity for reward calculation
+     */
+    function _distributeReward(address user, string memory activityType, uint256 amount) internal {
+        if (address(rewardsDistributor) != address(0)) {
+            try rewardsDistributor.distributeActivityReward(user, activityType, amount) {
+                // Reward distributed successfully
+            } catch {
+                // Silently fail to not block main transaction
+                // Could emit an event here for monitoring
+            }
+        }
     }
 
     /**
@@ -940,6 +974,10 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
 
         // Update market data
         _updateMarketData(buyOrder.asset, price, amount);
+
+        // Distribute marketplace rewards to both buyer and seller (0.25% of trade value each)
+        _distributeReward(buyOrder.maker, "marketplace", tradeValue);
+        _distributeReward(sellOrder.maker, "marketplace", tradeValue);
 
         emit TradeExecuted(
             tradeId,

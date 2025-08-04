@@ -129,7 +129,7 @@ contract RewardsDistributor is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Create a new reward pool
+     * @notice Create a new reward pool (automatically called by protocol)
      * @param poolName Name of the reward pool
      * @param totalAllocated Total tokens allocated to this pool
      * @param duration Duration of the reward period
@@ -168,6 +168,89 @@ contract RewardsDistributor is AccessControl, ReentrancyGuard, Pausable {
         rewardToken.safeTransferFrom(msg.sender, address(this), totalAllocated);
 
         emit RewardPoolCreated(poolName, totalAllocated, duration);
+    }
+
+    /**
+     * @notice Initialize default reward pools automatically
+     * @dev Called during contract deployment to set up all protocol reward pools
+     */
+    function initializeDefaultPools() external onlyRole(REWARDS_ADMIN_ROLE) {
+        uint256 poolDuration = 365 days; // 1 year reward cycles
+        uint256 baseAllocation = 100000 * 10**18; // 100k tokens per pool
+        
+        // Auto-create all protocol reward pools
+        string[8] memory defaultPools = [
+            "staking",           // Staking rewards
+            "trading",          // Trading volume rewards
+            "lending",          // Lending protocol rewards
+            "governance",       // Governance participation
+            "marketplace",      // NFT marketplace activity
+            "liquidity",        // Liquidity provision
+            "rwa_tokenization", // RWA tokenization rewards
+            "referral"          // Referral program rewards
+        ];
+        
+        for (uint i = 0; i < defaultPools.length; i++) {
+            if (!rewardPools[defaultPools[i]].isActive) {
+                rewardPools[defaultPools[i]] = RewardPool({
+                    totalAllocated: baseAllocation,
+                    totalDistributed: 0,
+                    rewardRate: baseAllocation / poolDuration,
+                    lastUpdateTime: block.timestamp,
+                    rewardPerTokenStored: 0,
+                    isActive: true,
+                    periodFinish: block.timestamp + poolDuration,
+                    duration: poolDuration
+                });
+                
+                poolNames.push(defaultPools[i]);
+                emit RewardPoolCreated(defaultPools[i], baseAllocation, poolDuration);
+            }
+        }
+    }
+
+    /**
+     * @notice Automatically distribute rewards based on user activity
+     * @param user User address to reward
+     * @param activityType Type of activity ("trading", "lending", "staking", "governance")
+     * @param amount Activity amount (volume, stake, etc.)
+     */
+    function distributeActivityReward(
+        address user,
+        string calldata activityType,
+        uint256 amount
+    ) external onlyRole(DISTRIBUTOR_ROLE) {
+        if (!rewardPools[activityType].isActive) {
+            return; // Skip if pool doesn't exist
+        }
+        
+        // Calculate reward based on activity
+        uint256 rewardAmount = _calculateActivityReward(activityType, amount);
+        
+        if (rewardAmount > 0) {
+            pendingRewards[user] += rewardAmount;
+            rewardPools[activityType].totalDistributed += rewardAmount;
+            
+            emit RewardClaimed(user, activityType, rewardAmount);
+        }
+    }
+
+    /**
+     * @notice Auto-claim all pending rewards for a user
+     * @param user User address
+     */
+    function autoClaimRewards(address user) external nonReentrant {
+        uint256 totalPending = pendingRewards[user];
+        
+        if (totalPending > 0) {
+            pendingRewards[user] = 0;
+            claimedRewards[user] += totalPending;
+            totalRewardsDistributed += totalPending;
+            
+            rewardToken.safeTransfer(user, totalPending);
+            
+            emit RewardClaimed(user, "auto-claim", totalPending);
+        }
     }
 
     /**
@@ -435,6 +518,149 @@ contract RewardsDistributor is AccessControl, ReentrancyGuard, Pausable {
         return userStakes[user][poolName];
     }
 
+    /**
+     * @notice Get comprehensive user rewards data across all pools and activities
+     * @param user User address to query
+     * @return totalEarned Total rewards earned across all pools
+     * @return totalPending Total pending rewards from activities
+     * @return totalStakedAmount Total amount staked across all pools
+     * @return totalClaimedRewards Total rewards already claimed
+     * @return poolEarnings Array of earnings per active pool
+     * @return poolStakes Array of stake amounts per active pool
+     * @return vestingAmounts Array of releasable vesting amounts
+     * @return activePoolNames Array of active pool names
+     */
+    function getUserRewardsOverview(address user) external view returns (
+        uint256 totalEarned,
+        uint256 totalPending,
+        uint256 totalStakedAmount,
+        uint256 totalClaimedRewards,
+        uint256[] memory poolEarnings,
+        uint256[] memory poolStakes,
+        uint256[] memory vestingAmounts,
+        string[] memory activePoolNames
+    ) {
+        // Initialize return arrays
+        poolEarnings = new uint256[](poolNames.length);
+        poolStakes = new uint256[](poolNames.length);
+        activePoolNames = new string[](poolNames.length);
+        
+        uint256 activePoolCount = 0;
+        
+        // Calculate totals across all pools
+        for (uint256 i = 0; i < poolNames.length; i++) {
+            string memory poolName = poolNames[i];
+            
+            if (rewardPools[poolName].isActive) {
+                UserStake memory userStake = userStakes[user][poolName];
+                uint256 poolEarned = earned(user, poolName);
+                
+                poolEarnings[activePoolCount] = poolEarned;
+                poolStakes[activePoolCount] = userStake.amount;
+                activePoolNames[activePoolCount] = poolName;
+                
+                totalEarned += poolEarned;
+                totalStakedAmount += userStake.amount;
+                activePoolCount++;
+            }
+        }
+        
+        // Resize arrays to actual active pool count
+        assembly {
+            mstore(poolEarnings, activePoolCount)
+            mstore(poolStakes, activePoolCount)
+            mstore(activePoolNames, activePoolCount)
+        }
+        
+        // Add pending rewards from activity-based rewards
+        totalPending = pendingRewards[user];
+        totalEarned += totalPending;
+        
+        // Get claimed rewards
+        totalClaimedRewards = claimedRewards[user];
+        
+        // Calculate vesting amounts
+        VestingSchedule[] memory schedules = vestingSchedules[user];
+        vestingAmounts = new uint256[](schedules.length);
+        
+        for (uint256 i = 0; i < schedules.length; i++) {
+            if (!schedules[i].revoked) {
+                vestingAmounts[i] = _getReleasableAmount(schedules[i]);
+                totalEarned += vestingAmounts[i];
+            }
+        }
+        
+        return (
+            totalEarned,
+            totalPending,
+            totalStakedAmount,
+            totalClaimedRewards,
+            poolEarnings,
+            poolStakes,
+            vestingAmounts,
+            activePoolNames
+        );
+    }
+
+    /**
+     * @notice Get detailed breakdown of user's position across all protocol activities
+     * @param user User address to query
+     * @return stakingRewards Rewards from staking activities
+     * @return tradingRewards Rewards from trading activities
+     * @return lendingRewards Rewards from lending activities
+     * @return governanceRewards Rewards from governance participation
+     * @return marketplaceRewards Rewards from marketplace activities
+     * @return liquidityRewards Rewards from liquidity provision
+     * @return rwaRewards Rewards from RWA tokenization
+     * @return referralRewards Rewards from referral program
+     * @return totalVestingAmount Total amount in vesting schedules
+     * @return totalReleasableVesting Total releasable vesting amount
+     */
+    function getUserPositionBreakdown(address user) external view returns (
+        uint256 stakingRewards,
+        uint256 tradingRewards,
+        uint256 lendingRewards,
+        uint256 governanceRewards,
+        uint256 marketplaceRewards,
+        uint256 liquidityRewards,
+        uint256 rwaRewards,
+        uint256 referralRewards,
+        uint256 totalVestingAmount,
+        uint256 totalReleasableVesting
+    ) {
+        // Get rewards from each specific pool
+        stakingRewards = earned(user, "staking");
+        tradingRewards = earned(user, "trading");
+        lendingRewards = earned(user, "lending");
+        governanceRewards = earned(user, "governance");
+        marketplaceRewards = earned(user, "marketplace");
+        liquidityRewards = earned(user, "liquidity");
+        rwaRewards = earned(user, "rwa_tokenization");
+        referralRewards = earned(user, "referral");
+        
+        // Calculate vesting totals
+        VestingSchedule[] memory schedules = vestingSchedules[user];
+        for (uint256 i = 0; i < schedules.length; i++) {
+            if (!schedules[i].revoked) {
+                totalVestingAmount += schedules[i].totalAmount - schedules[i].releasedAmount;
+                totalReleasableVesting += _getReleasableAmount(schedules[i]);
+            }
+        }
+        
+        return (
+            stakingRewards,
+            tradingRewards,
+            lendingRewards,
+            governanceRewards,
+            marketplaceRewards,
+            liquidityRewards,
+            rwaRewards,
+            referralRewards,
+            totalVestingAmount,
+            totalReleasableVesting
+        );
+    }
+
     // Internal functions
     function _getReleasableAmount(VestingSchedule memory schedule) internal view returns (uint256) {
         if (schedule.revoked) {
@@ -455,6 +681,35 @@ contract RewardsDistributor is AccessControl, ReentrancyGuard, Pausable {
         uint256 vestedAmount = (schedule.totalAmount * timeFromStart) / schedule.duration;
         
         return vestedAmount - schedule.releasedAmount;
+    }
+
+    /**
+     * @notice Calculate reward amount based on activity type and amount
+     * @param activityType Type of activity
+     * @param amount Activity amount
+     * @return Calculated reward amount
+     */
+    function _calculateActivityReward(string memory activityType, uint256 amount) internal pure returns (uint256) {
+        // Different reward rates for different activities
+        if (keccak256(bytes(activityType)) == keccak256(bytes("trading"))) {
+            return (amount * 10) / BASIS_POINTS; // 0.1% of trading volume
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("lending"))) {
+            return (amount * 50) / BASIS_POINTS; // 0.5% of lending amount
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("staking"))) {
+            return (amount * 100) / BASIS_POINTS; // 1% of staking amount
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("governance"))) {
+            return 1000 * 10**18; // Fixed 1000 tokens for governance participation
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("marketplace"))) {
+            return (amount * 25) / BASIS_POINTS; // 0.25% of marketplace transaction value
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("liquidity"))) {
+            return (amount * 75) / BASIS_POINTS; // 0.75% of liquidity provided
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("rwa_tokenization"))) {
+            return (amount * 200) / BASIS_POINTS; // 2% of RWA tokenization value
+        } else if (keccak256(bytes(activityType)) == keccak256(bytes("referral"))) {
+            return 500 * 10**18; // Fixed 500 tokens for successful referral
+        }
+        
+        return 0;
     }
 
     // Admin functions

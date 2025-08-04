@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IHedVaultCore.sol";
 import "./PriceOracle.sol";
+import "./RewardsDistributor.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
@@ -33,6 +34,7 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     // Core protocol references
     IHedVaultCore public immutable hedVaultCore;
     PriceOracle public immutable priceOracle;
+    RewardsDistributor private rewardsDistributor;
 
     // Loan status enumeration
     enum LoanStatus {
@@ -253,12 +255,44 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
         priceOracle = PriceOracle(_priceOracle);
         feeRecipient = _feeRecipient;
 
+        // Initialize rewards distributor
+        _initializeRewards();
+
         // Set up roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(LENDING_ADMIN_ROLE, msg.sender);
         _grantRole(LIQUIDATOR_ROLE, msg.sender);
         _grantRole(EMERGENCY_ROLE, msg.sender);
         _grantRole(RATE_MANAGER_ROLE, msg.sender);
+    }
+
+    /**
+     * @notice Initialize rewards distributor connection
+     * @dev Gets RewardsDistributor address from HedVaultCore
+     */
+    function _initializeRewards() internal {
+        address rewardsAddr = hedVaultCore.rewardsDistributor();
+        if (rewardsAddr != address(0)) {
+            rewardsDistributor = RewardsDistributor(rewardsAddr);
+        }
+    }
+
+    /**
+     * @notice Distribute activity rewards to user
+     * @dev Safely calls RewardsDistributor without reverting main transaction
+     * @param user User to receive rewards
+     * @param activityType Type of activity ("lending")
+     * @param amount Amount of activity for reward calculation
+     */
+    function _distributeReward(address user, string memory activityType, uint256 amount) internal {
+        if (address(rewardsDistributor) != address(0)) {
+            try rewardsDistributor.distributeActivityReward(user, activityType, amount) {
+                // Reward distributed successfully
+            } catch {
+                // Silently fail to not block main transaction
+                // Could emit an event here for monitoring
+            }
+        }
     }
 
     /**
@@ -286,6 +320,9 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
 
         // Update pool totals
         pools[token].totalDeposits += amount;
+
+        // Distribute lending rewards (0.5% of deposit amount)
+        _distributeReward(msg.sender, "lending", amount);
 
         emit Deposit(msg.sender, token, amount, block.timestamp);
         emit Events.CollateralDeposited(msg.sender, token, amount);
@@ -440,6 +477,9 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
 
         // Transfer borrowed tokens to user
         IERC20(borrowToken).safeTransfer(msg.sender, borrowAmount);
+
+        // Distribute lending rewards for borrowing activity (0.5% of borrow amount)
+        _distributeReward(msg.sender, "lending", borrowAmount);
 
         emit LoanCreated(
             loanId,

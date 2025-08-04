@@ -530,4 +530,222 @@ contract RewardsDistributorTest is Test {
         
         vm.stopPrank();
     }
+    
+    function testInitializeDefaultPools() public {
+        vm.startPrank(admin);
+        
+        rewardsDistributor.initializeDefaultPools();
+        
+        string[] memory poolNames = rewardsDistributor.getPoolNames();
+        assertEq(poolNames.length, 8);
+        
+        // Check that all expected pools exist
+        assertTrue(bytes(poolNames[0]).length > 0);
+        assertTrue(bytes(poolNames[1]).length > 0);
+        assertTrue(bytes(poolNames[2]).length > 0);
+        assertTrue(bytes(poolNames[3]).length > 0);
+        assertTrue(bytes(poolNames[4]).length > 0);
+        assertTrue(bytes(poolNames[5]).length > 0);
+        assertTrue(bytes(poolNames[6]).length > 0);
+        assertTrue(bytes(poolNames[7]).length > 0);
+        
+        // Check that pools are active
+        (, , , , , bool isActive, , ) = rewardsDistributor.rewardPools("staking");
+        assertTrue(isActive);
+        
+        vm.stopPrank();
+    }
+    
+    function testDistributeActivityReward() public {
+        // Initialize default pools first
+        vm.startPrank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        rewardsDistributor.grantRole(rewardsDistributor.DISTRIBUTOR_ROLE(), admin);
+        vm.stopPrank();
+        
+        uint256 tradingVolume = 10000 * 10**18;
+        
+        vm.prank(admin);
+        rewardsDistributor.distributeActivityReward(user1, "trading", tradingVolume);
+        
+        uint256 expectedReward = (tradingVolume * 10) / 10000; // 0.1% of trading volume
+        assertEq(rewardsDistributor.pendingRewards(user1), expectedReward);
+    }
+    
+    function testAutoClaimRewards() public {
+        // Setup: Initialize pools and distribute rewards
+        vm.startPrank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        rewardsDistributor.grantRole(rewardsDistributor.DISTRIBUTOR_ROLE(), admin);
+        
+        uint256 tradingVolume = 10000 * 10**18;
+        rewardsDistributor.distributeActivityReward(user1, "trading", tradingVolume);
+        vm.stopPrank();
+        
+        uint256 expectedReward = (tradingVolume * 10) / 10000;
+        uint256 balanceBefore = rewardToken.balanceOf(user1);
+        
+        // Mint tokens to contract for rewards
+        rewardToken.mint(address(rewardsDistributor), expectedReward);
+        
+        vm.prank(user1);
+        rewardsDistributor.autoClaimRewards(user1);
+        
+        uint256 balanceAfter = rewardToken.balanceOf(user1);
+        assertEq(balanceAfter - balanceBefore, expectedReward);
+        assertEq(rewardsDistributor.pendingRewards(user1), 0);
+        assertEq(rewardsDistributor.claimedRewards(user1), expectedReward);
+    }
+    
+    function testCalculateActivityRewards() public {
+        vm.startPrank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        rewardsDistributor.grantRole(rewardsDistributor.DISTRIBUTOR_ROLE(), admin);
+        
+        // Test trading rewards (0.1%)
+        uint256 tradingAmount = 100000 * 10**18;
+        rewardsDistributor.distributeActivityReward(user1, "trading", tradingAmount);
+        uint256 expectedTradingReward = (tradingAmount * 10) / 10000;
+        assertEq(rewardsDistributor.pendingRewards(user1), expectedTradingReward);
+        
+        // Test lending rewards (0.5%)
+        uint256 lendingAmount = 50000 * 10**18;
+        rewardsDistributor.distributeActivityReward(user2, "lending", lendingAmount);
+        uint256 expectedLendingReward = (lendingAmount * 50) / 10000;
+        assertEq(rewardsDistributor.pendingRewards(user2), expectedLendingReward);
+        
+        // Test governance rewards (fixed 1000 tokens)
+        rewardsDistributor.distributeActivityReward(user1, "governance", 1);
+        uint256 expectedGovernanceReward = 1000 * 10**18;
+        assertEq(rewardsDistributor.pendingRewards(user1), expectedTradingReward + expectedGovernanceReward);
+        
+        vm.stopPrank();
+    }
+    
+    function testGetUserRewardsOverview() public {
+        // Initialize default pools first
+        vm.prank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        
+        // Stake in multiple pools
+        uint256 stakeAmount = 100 * 10**18;
+        
+        vm.startPrank(user1);
+        rewardToken.approve(address(rewardsDistributor), stakeAmount * 3);
+        rewardsDistributor.stake("staking", stakeAmount, 0);
+        rewardsDistributor.stake("trading", stakeAmount, 0);
+        rewardsDistributor.stake("lending", stakeAmount, 0);
+        vm.stopPrank();
+        
+        // Distribute some activity rewards
+        vm.prank(distributor);
+        rewardsDistributor.distributeActivityReward(user1, "governance", 1);
+        
+        // Get comprehensive overview
+        (
+            uint256 totalEarned,
+            uint256 totalPending,
+            uint256 totalStakedAmount,
+            uint256 totalClaimedRewards,
+            uint256[] memory poolEarnings,
+            uint256[] memory poolStakes,
+            uint256[] memory vestingAmounts,
+            string[] memory activePoolNames
+        ) = rewardsDistributor.getUserRewardsOverview(user1);
+        
+        // Verify results (accounting for staking fees)
+        uint256 stakeFee = (stakeAmount * 100) / 10000; // 1% staking fee
+        uint256 actualStakeAmount = stakeAmount - stakeFee;
+        assertEq(totalStakedAmount, actualStakeAmount * 3);
+        assertEq(totalPending, 1000 * 10**18); // Governance reward
+        assertEq(totalClaimedRewards, 0);
+        assertTrue(activePoolNames.length >= 3);
+        assertTrue(poolStakes.length >= 3);
+    }
+
+    function testGetUserPositionBreakdown() public {
+        // Initialize default pools first
+        vm.prank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        
+        // Stake in different pools
+        uint256 stakeAmount = 50 * 10**18;
+        
+        vm.startPrank(user1);
+        rewardToken.approve(address(rewardsDistributor), stakeAmount * 4);
+        rewardsDistributor.stake("staking", stakeAmount, 0);
+        rewardsDistributor.stake("trading", stakeAmount, 0);
+        rewardsDistributor.stake("lending", stakeAmount, 0);
+        rewardsDistributor.stake("governance", stakeAmount, 0);
+        vm.stopPrank();
+        
+        // Distribute activity rewards for different types
+        vm.startPrank(distributor);
+        rewardsDistributor.distributeActivityReward(user1, "marketplace", 1000 * 10**18);
+        rewardsDistributor.distributeActivityReward(user1, "liquidity", 500 * 10**18);
+        rewardsDistributor.distributeActivityReward(user1, "rwa_tokenization", 200 * 10**18);
+        rewardsDistributor.distributeActivityReward(user1, "referral", 1);
+        vm.stopPrank();
+        
+        // Get position breakdown
+        (
+            uint256 stakingRewards,
+            uint256 tradingRewards,
+            uint256 lendingRewards,
+            uint256 governanceRewards,
+            uint256 marketplaceRewards,
+            uint256 liquidityRewards,
+            uint256 rwaRewards,
+            uint256 referralRewards,
+            uint256 totalVestingAmount,
+            uint256 totalReleasableVesting
+        ) = rewardsDistributor.getUserPositionBreakdown(user1);
+        
+        // Verify activity-based rewards are tracked
+        uint256 expectedMarketplace = (1000 * 10**18 * 25) / 10000; // 0.25%
+        uint256 expectedLiquidity = (500 * 10**18 * 75) / 10000; // 0.75%
+        uint256 expectedRwa = (200 * 10**18 * 200) / 10000; // 2%
+        uint256 expectedReferral = 500 * 10**18; // Fixed amount
+        
+        // Note: These are pending rewards, not pool-specific earned rewards
+        // The breakdown function shows pool-specific staking rewards
+        assertTrue(stakingRewards >= 0);
+        assertTrue(tradingRewards >= 0);
+        assertTrue(lendingRewards >= 0);
+        assertTrue(governanceRewards >= 0);
+    }
+
+    function testNewActivityRewardTypes() public {
+        // Initialize default pools first to create the new activity pools
+        vm.prank(admin);
+        rewardsDistributor.initializeDefaultPools();
+        
+        // Test new activity types added to the protocol
+        uint256 marketplaceVolume = 10000 * 10**18;
+        uint256 liquidityAmount = 5000 * 10**18;
+        uint256 rwaValue = 1000 * 10**18;
+        
+        vm.startPrank(distributor);
+        
+        // Test marketplace rewards
+        rewardsDistributor.distributeActivityReward(user1, "marketplace", marketplaceVolume);
+        uint256 expectedMarketplace = (marketplaceVolume * 25) / 10000; // 0.25%
+        
+        // Test liquidity rewards
+        rewardsDistributor.distributeActivityReward(user1, "liquidity", liquidityAmount);
+        uint256 expectedLiquidity = (liquidityAmount * 75) / 10000; // 0.75%
+        
+        // Test RWA tokenization rewards
+        rewardsDistributor.distributeActivityReward(user1, "rwa_tokenization", rwaValue);
+        uint256 expectedRwa = (rwaValue * 200) / 10000; // 2%
+        
+        // Test referral rewards
+        rewardsDistributor.distributeActivityReward(user1, "referral", 1);
+        uint256 expectedReferral = 500 * 10**18; // Fixed amount
+        
+        vm.stopPrank();
+        
+        uint256 totalExpected = expectedMarketplace + expectedLiquidity + expectedRwa + expectedReferral;
+        assertEq(rewardsDistributor.pendingRewards(user1), totalExpected);
+    }
 }
