@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WalletCard } from "@/components/ui/wallet-card";
-
 interface Tab {
   id: string;
   label: string;
@@ -85,7 +84,7 @@ export function DashboardSidebar({
       </div>
 
       {/* Navigation Tabs */}
-      <nav className="flex-1 p-6">
+      <nav className="p-6">
         <div className="space-y-2">
           {!isCollapsed && (
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 transition-opacity duration-300">
@@ -127,40 +126,37 @@ export function DashboardSidebar({
         </div>
       </nav>
 
+      {/* Wallet Section */}
+      {!isCollapsed && (
+        <div className="px-6 mb-6">
+          <WalletCard />
+        </div>
+      )}
+
       {/* Bottom Section */}
       <div
-        className={`border-t border-gray-900 transition-all duration-300 ${
+        className={`mt-auto border-t border-gray-900 transition-all duration-300 ${
           isCollapsed ? "p-3" : "p-6"
         }`}
       >
         {!isCollapsed ? (
-          <div className="space-y-4">
-            {/* Wallet Connection */}
-            <WalletCard
-              isConnected={true}
-              walletAddress="0x1234...5678"
-              onManageWallet={() => console.log('Manage wallet clicked')}
-            />
-
-            {/* Settings & Logout */}
-            <div className="flex space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 text-gray-400 hover:text-white hover:bg-gray-900/50"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1 text-gray-400 hover:text-white hover:bg-gray-900/50"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 text-gray-400 hover:text-white hover:bg-gray-900/50"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 text-gray-400 hover:text-white hover:bg-gray-900/50"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">

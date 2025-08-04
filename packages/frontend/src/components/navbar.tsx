@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { Vault } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { Vault } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Component() {
   return (
@@ -18,16 +18,28 @@ export default function Component() {
 
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center space-x-8">
-          <Link href="/" className="text-white hover:text-green-400 transition-colors font-medium cursor-pointer">
+          <Link
+            href="/"
+            className="text-white hover:text-green-400 transition-colors font-medium cursor-pointer"
+          >
             Home
           </Link>
-          <Link href="/features" className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer">
+          <Link
+            href="/features"
+            className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer"
+          >
             Features
           </Link>
-          <Link href="/solutions" className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer">
+          <Link
+            href="/solutions"
+            className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer"
+          >
             Solutions
           </Link>
-          <Link href="/faq" className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer">
+          <Link
+            href="/faq"
+            className="text-gray-300 hover:text-green-400 transition-colors font-medium cursor-pointer"
+          >
             FAQ
           </Link>
         </nav>
@@ -42,5 +54,5 @@ export default function Component() {
         </div>
       </div>
     </header>
-  )
+  );
 }
