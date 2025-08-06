@@ -8,23 +8,7 @@ import "./interfaces/IHedVaultCore.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
-
-// Chainlink interfaces
-interface AggregatorV3Interface {
-    function decimals() external view returns (uint8);
-    function description() external view returns (string memory);
-    function version() external view returns (uint256);
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
-}
+import "./interfaces/IChainlink.sol";
 
 /**
  * @title PriceOracle

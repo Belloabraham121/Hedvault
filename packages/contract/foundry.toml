@@ -11,11 +11,26 @@ optimizer = true
 optimizer_runs = 200
 via_ir = true
 
-# Hedera Testnet Configuration
+# Hedera Network Configuration
 [rpc_endpoints]
-testnet = "https://testnet.hashio.io/api"
+# Hedera Testnet
+hedera_testnet = "https://testnet.hashio.io/api"
+testnet = "${RPC_URL}"
 
-[etherscan]
-testnet = { key = "${ETHERSCAN_API_KEY}", chain = 296, url = "https://hashscan.io/testnet/" }
+# Hedera Mainnet
+hedera_mainnet = "https://mainnet.hashio.io/api"
+mainnet = "https://mainnet.hashio.io/api"
+
+# Local Hedera (for development)
+hedera_local = "http://localhost:7546"
+
+# [etherscan]
+# # Hedera Testnet
+# hedera_testnet = { chain = 296, url = "https://hashscan.io/testnet/" }
+# testnet = { chain = 296, url = "https://hashscan.io/testnet/" }
+
+# # Hedera Mainnet
+# hedera_mainnet = { chain = 295, url = "https://hashscan.io/mainnet/" }
+# mainnet = { chain = 295, url = "https://hashscan.io/mainnet/" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

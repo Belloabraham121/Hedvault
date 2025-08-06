@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IHedVaultCore.sol";
 import "./PriceOracle.sol";
+import "./RewardsDistributor.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
@@ -29,6 +30,7 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
     // Core protocol references
     IHedVaultCore public immutable hedVaultCore;
     PriceOracle public immutable priceOracle;
+    RewardsDistributor private rewardsDistributor;
 
     // Order structures
     struct Order {
@@ -244,7 +246,8 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
     constructor(
         address _hedVaultCore,
         address _priceOracle,
-        address _feeRecipient
+        address _feeRecipient,
+        address _rewardsDistributor
     ) {
         if (
             _hedVaultCore == address(0) ||
@@ -258,6 +261,9 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
         priceOracle = PriceOracle(_priceOracle);
         feeRecipient = _feeRecipient;
 
+        // Initialize rewards distributor
+        _initializeRewards(_rewardsDistributor);
+
         // Set up roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MARKETPLACE_ADMIN_ROLE, msg.sender);
@@ -269,6 +275,45 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
         totalVolumeTraded = 0;
         totalTradesExecuted = 0;
         emergencyStop = false;
+    }
+
+    /**
+     * @notice Initialize rewards distributor connection
+     * @dev Sets RewardsDistributor address directly
+     * @param _rewardsDistributor Address of the rewards distributor contract
+     */
+    function _initializeRewards(address _rewardsDistributor) internal {
+        if (_rewardsDistributor != address(0)) {
+            rewardsDistributor = RewardsDistributor(_rewardsDistributor);
+        }
+    }
+
+    /**
+     * @notice Distribute activity rewards to user
+     * @dev Safely calls RewardsDistributor without reverting main transaction
+     * @param user User to receive rewards
+     * @param activityType Type of activity ("marketplace")
+     * @param amount Amount of activity for reward calculation
+     */
+    function _distributeReward(
+        address user,
+        string memory activityType,
+        uint256 amount
+    ) internal {
+        if (address(rewardsDistributor) != address(0)) {
+            try
+                rewardsDistributor.distributeActivityReward(
+                    user,
+                    activityType,
+                    amount
+                )
+            {
+                // Reward distributed successfully
+            } catch {
+                // Silently fail to not block main transaction
+                // Could emit an event here for monitoring
+            }
+        }
     }
 
     /**
@@ -941,6 +986,10 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
         // Update market data
         _updateMarketData(buyOrder.asset, price, amount);
 
+        // Distribute marketplace rewards to both buyer and seller (0.25% of trade value each)
+        _distributeReward(buyOrder.maker, "marketplace", tradeValue);
+        _distributeReward(sellOrder.maker, "marketplace", tradeValue);
+
         emit TradeExecuted(
             tradeId,
             buyOrderId,
@@ -1015,28 +1064,45 @@ contract Marketplace is AccessControl, ReentrancyGuard, Pausable {
             uint256 buyerFee = (tradeValue * takerFee) / 10000;
             uint256 sellerFee = (tradeValue * makerFee) / 10000;
 
-            if (orderType == 0) { // BUY market order
+            if (orderType == 0) {
+                // BUY market order
                 // Transfer asset from seller to buyer
                 IERC20(asset).safeTransfer(msg.sender, tradeAmount);
-                
+
                 // Transfer payment from buyer to seller
                 uint256 sellerProceeds = tradeValue - sellerFee;
-                IERC20(paymentToken).safeTransferFrom(msg.sender, oppositeOrder.maker, sellerProceeds);
-                
+                IERC20(paymentToken).safeTransferFrom(
+                    msg.sender,
+                    oppositeOrder.maker,
+                    sellerProceeds
+                );
+
                 // Transfer fees from buyer to protocol
-                IERC20(paymentToken).safeTransferFrom(msg.sender, feeRecipient, buyerFee + sellerFee);
-            } else { // SELL market order
+                IERC20(paymentToken).safeTransferFrom(
+                    msg.sender,
+                    feeRecipient,
+                    buyerFee + sellerFee
+                );
+            } else {
+                // SELL market order
                 // Transfer asset from seller to buyer
-                IERC20(asset).safeTransferFrom(msg.sender, oppositeOrder.maker, tradeAmount);
-                
+                IERC20(asset).safeTransferFrom(
+                    msg.sender,
+                    oppositeOrder.maker,
+                    tradeAmount
+                );
+
                 // Transfer payment from buyer to seller
                 uint256 sellerProceeds = tradeValue - sellerFee;
                 IERC20(paymentToken).safeTransfer(msg.sender, sellerProceeds);
-                
+
                 // Transfer fees to protocol (already collected from buyer's locked funds)
-                IERC20(paymentToken).safeTransfer(feeRecipient, buyerFee + sellerFee);
+                IERC20(paymentToken).safeTransfer(
+                    feeRecipient,
+                    buyerFee + sellerFee
+                );
             }
-            
+
             totalFeesCollected += buyerFee + sellerFee;
 
             // Record trade
