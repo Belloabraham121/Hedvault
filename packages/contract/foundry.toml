@@ -15,7 +15,7 @@ via_ir = true
 [rpc_endpoints]
 # Hedera Testnet
 hedera_testnet = "https://testnet.hashio.io/api"
-testnet = "https://testnet.hashio.io/api"
+testnet = "${RPC_URL}"
 
 # Hedera Mainnet
 hedera_mainnet = "https://mainnet.hashio.io/api"
@@ -24,13 +24,13 @@ mainnet = "https://mainnet.hashio.io/api"
 # Local Hedera (for development)
 hedera_local = "http://localhost:7546"
 
-[etherscan]
-# Hedera Testnet
-hedera_testnet = { key = "${ETHERSCAN_API_KEY}", chain = 296, url = "https://hashscan.io/testnet/" }
-testnet = { key = "${ETHERSCAN_API_KEY}", chain = 296, url = "https://hashscan.io/testnet/" }
+# [etherscan]
+# # Hedera Testnet
+# hedera_testnet = { chain = 296, url = "https://hashscan.io/testnet/" }
+# testnet = { chain = 296, url = "https://hashscan.io/testnet/" }
 
-# Hedera Mainnet
-hedera_mainnet = { key = "${ETHERSCAN_API_KEY}", chain = 295, url = "https://hashscan.io/mainnet/" }
-mainnet = { key = "${ETHERSCAN_API_KEY}", chain = 295, url = "https://hashscan.io/mainnet/" }
+# # Hedera Mainnet
+# hedera_mainnet = { chain = 295, url = "https://hashscan.io/mainnet/" }
+# mainnet = { chain = 295, url = "https://hashscan.io/mainnet/" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
