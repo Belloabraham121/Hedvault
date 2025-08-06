@@ -1,0 +1,28 @@
+{
+  "function": "createRWAToken",
+  "contract": "RWATokenFactory",
+  "parameters": {
+    "metadata": {
+      "assetType": "string - e.g., 'PreciousMetals', 'RealEstate', 'Art'",
+      "location": "string - e.g., 'LBMA Certified Vaults, London'",
+      "valuation": "uint256 - asset value in wei (1e18 = $1)",
+      "lastValuationDate": "uint256 - Unix timestamp",
+      "certificationHash": "string - IPFS hash or certification identifier",
+      "isActive": "bool - true/false for active status",
+      "oracle": "address - price oracle contract address",
+      "totalSupply": "uint256 - total token supply in wei",
+      "minInvestment": "uint256 - minimum investment amount in wei"
+    },
+    "name": "string - token name (e.g., 'Gold Token')",
+    "symbol": "string - token symbol (e.g., 'HVGOLD')",
+    "totalSupply": "uint256 - total token supply (same as metadata.totalSupply)"
+  },
+  "example": {
+    "metadata": "(PreciousMetals, LBMA Certified Vaults, London, 2000000000000000000000, 1754500596, ipfs://QmGoldCertification123, true, 0x6dCbEA0Fa11B21a6B9F72BccaceFeb0B1ED0B444, 10000000000000000000000, 100000000000000000000)",
+    "name": "Gold Token",
+    "symbol": "HVGOLD",
+    "totalSupply": "10000000000000000000000"
+  },
+  "value": "100000000000000000000",
+  "note": "Send 100 tokens (1e20 wei) as token creation fee"
+}

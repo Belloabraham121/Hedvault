@@ -1,0 +1,18 @@
+{
+  "name": "hedvault-rwa-token-creator",
+  "version": "1.0.0",
+  "description": "Node.js script to create RWA tokens using RWATokenFactory",
+  "main": "create-rwa-token.js",
+  "scripts": {
+    "create-token": "node create-rwa-token.js",
+    "create-gold": "node create-single-token.js gold",
+    "create-silver": "node create-single-token.js silver",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "ethers": "^6.10.0"
+  },
+  "keywords": ["rwa", "token", "factory", "hedera", "defi"],
+  "author": "HedVault",
+  "license": "MIT"
+}
