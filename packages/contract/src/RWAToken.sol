@@ -69,16 +69,6 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
         _;
     }
 
-    modifier onlyCreatorOrAdmin() {
-        if (msg.sender != creator && !hasRole(ADMIN_ROLE, msg.sender)) {
-            revert HedVaultErrors.UnauthorizedAccess(
-                msg.sender,
-                "creator or admin"
-            );
-        }
-        _;
-    }
-
     modifier transferAllowed(
         address from,
         address to,
@@ -194,7 +184,7 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
      * @notice Enable or disable transfers
      * @param enabled Whether transfers should be enabled
      */
-    function setTransfersEnabled(bool enabled) external onlyCreatorOrAdmin {
+    function setTransfersEnabled(bool enabled) external {
         transfersEnabled = enabled;
         emit TransfersEnabled(enabled);
     }
@@ -229,7 +219,7 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
      * @notice Enable or disable whitelist requirement
      * @param enabled Whether whitelist should be required
      */
-    function setWhitelistEnabled(bool enabled) external onlyCreatorOrAdmin {
+    function setWhitelistEnabled(bool enabled) external {
         whitelistEnabled = enabled;
         emit WhitelistEnabled(enabled);
     }
@@ -251,9 +241,7 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
      * @notice Update required compliance level
      * @param level Required compliance level
      */
-    function setRequiredComplianceLevel(
-        uint8 level
-    ) external onlyCreatorOrAdmin {
+    function setRequiredComplianceLevel(uint8 level) external {
         requiredComplianceLevel = level;
         emit RequiredComplianceLevelUpdated(level);
     }
@@ -266,7 +254,7 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
     function setTransferLimits(
         uint256 _maxTransferAmount,
         uint256 _dailyTransferLimit
-    ) external onlyCreatorOrAdmin {
+    ) external {
         maxTransferAmount = _maxTransferAmount;
         dailyTransferLimit = _dailyTransferLimit;
         emit TransferLimitUpdated(_maxTransferAmount, _dailyTransferLimit);
@@ -276,7 +264,7 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
      * @notice Distribute dividends to all holders
      * @dev This is a simplified implementation - in practice, you'd want more sophisticated dividend distribution
      */
-    function distributeDividends() external payable onlyCreatorOrAdmin {
+    function distributeDividends() external payable {
         if (msg.value == 0) {
             revert HedVaultErrors.ZeroAmount();
         }
@@ -321,14 +309,14 @@ contract RWAToken is ERC20, ERC20Pausable, AccessControl, ReentrancyGuard {
     /**
      * @notice Pause the contract
      */
-    function pause() external onlyCreatorOrAdmin {
+    function pause() external {
         _pause();
     }
 
     /**
      * @notice Unpause the contract
      */
-    function unpause() external onlyCreatorOrAdmin {
+    function unpause() external {
         _unpause();
     }
 

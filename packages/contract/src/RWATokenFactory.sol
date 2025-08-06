@@ -41,8 +41,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
     mapping(string => bool) public supportedAssetTypes;
     mapping(string => uint256) public assetTypeCount;
 
-    // Token creation fees
-    uint256 public tokenCreationFee = 100 * 1e18; // 100 HBAR equivalent
+    // Token listing fees
     uint256 public listingFee = 50 * 1e18; // 50 HBAR equivalent
 
     // Minimum requirements
@@ -117,23 +116,11 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         string calldata name,
         string calldata symbol,
         uint256 totalSupply
-    )
-        external
-        payable
-        whenNotPaused
-        nonReentrant
-        returns (address tokenAddress)
-    {
+    ) external whenNotPaused nonReentrant returns (address tokenAddress) {
         // Validate inputs
         _validateTokenCreation(metadata, totalSupply);
 
-        // Check creation fee
-        if (msg.value < tokenCreationFee) {
-            revert HedVaultErrors.InsufficientFeePayment(
-                msg.value,
-                tokenCreationFee
-            );
-        }
+        // No creation fee required
 
         // Increment token ID
         _tokenIdCounter++;
@@ -171,8 +158,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         creatorTokens[msg.sender].push(tokenId);
         assetTypeCount[metadata.assetType]++;
 
-        // Transfer creation fee to protocol
-        _transferFee(tokenCreationFee);
+        // No creation fee to transfer
 
         emit TokenCreated(
             tokenId,
@@ -340,15 +326,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         emit AssetTypeRemoved(assetType, msg.sender);
     }
 
-    /**
-     * @notice Update token creation fee
-     * @param newFee New creation fee
-     */
-    function updateTokenCreationFee(
-        uint256 newFee
-    ) external onlyRole(ADMIN_ROLE) {
-        tokenCreationFee = newFee;
-    }
+    // Token creation fee functionality removed
 
     /**
      * @notice Update listing fee

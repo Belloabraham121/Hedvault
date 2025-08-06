@@ -305,9 +305,12 @@ contract CreateFactoryTokens is Script {
         // Create token
         RWATokenFactory factory = RWATokenFactory(rwaTokenFactory);
 
-        address tokenAddress = factory.createRWAToken{
-            value: TOKEN_CREATION_FEE
-        }(metadata, config.name, config.symbol, config.totalSupply);
+        address tokenAddress = factory.createRWAToken(
+            metadata,
+            config.name,
+            config.symbol,
+            config.totalSupply
+        );
 
         console.log("Token created at:", tokenAddress);
         console.log("Symbol:", config.symbol);

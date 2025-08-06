@@ -1,14 +1,14 @@
-import { useReadContract } from 'wagmi';
-import { useMemo } from 'react';
-import { RWATOKEN_FACTORY_ABI } from '../abis/RWATokenFactory';
-import { RWATOKEN_FACTORY_ADDRESS } from '../config/rwaTokenFactory';
+import { useReadContract } from "wagmi";
+import { useMemo } from "react";
+import { RWATOKEN_FACTORY_ABI } from "../abis/RWATokenFactory";
+import { RWATOKEN_FACTORY_ADDRESS } from "../config/rwaTokenFactory";
 
 // Hook for getting all RWA token addresses
 export function useGetAllRWATokens() {
   return useReadContract({
     address: RWATOKEN_FACTORY_ADDRESS,
     abi: RWATOKEN_FACTORY_ABI,
-    functionName: 'getAllRWATokens',
+    functionName: "getAllRWATokens",
   });
 }
 
@@ -17,7 +17,7 @@ export function useGetAllRWATokensWithInfo() {
   return useReadContract({
     address: RWATOKEN_FACTORY_ADDRESS,
     abi: RWATOKEN_FACTORY_ABI,
-    functionName: 'getAllRWATokensWithInfo',
+    functionName: "getAllRWATokensWithInfo",
   });
 }
 
@@ -26,17 +26,20 @@ export function useRWATokenFactoryTokens() {
   const allTokens = useGetAllRWATokens();
   const allTokensWithInfo = useGetAllRWATokensWithInfo();
 
-  return useMemo(() => ({
-    allTokens,
-    allTokensWithInfo,
-    isLoading: allTokens.isLoading || allTokensWithInfo.isLoading,
-    isError: allTokens.isError || allTokensWithInfo.isError,
-    error: allTokens.error || allTokensWithInfo.error,
-    refetch: () => {
-      allTokens.refetch();
-      allTokensWithInfo.refetch();
-    },
-  }), [allTokens, allTokensWithInfo]);
+  return useMemo(
+    () => ({
+      allTokens,
+      allTokensWithInfo,
+      isLoading: allTokens.isLoading || allTokensWithInfo.isLoading,
+      isError: allTokens.isError || allTokensWithInfo.isError,
+      error: allTokens.error || allTokensWithInfo.error,
+      refetch: () => {
+        allTokens.refetch();
+        allTokensWithInfo.refetch();
+      },
+    }),
+    [allTokens, allTokensWithInfo]
+  );
 }
 
 // Usage example component

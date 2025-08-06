@@ -12,8 +12,8 @@ const { ethers } = require("ethers");
 const CONFIG = {
   RPC_URL: "https://testnet.hashio.io/api", // Anvil local network
   PRIVATE_KEY:
-    "0xea4627f1e2ca14f0b90163f99d4622de592d2d2487d87b2099602c9256af797e", // Anvil default account
-  FACTORY_ADDRESS: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9", // Update with your deployed address
+    "0xea4627f1e2ca14f0b90163f99d4622de592d2d2487d87b2099602c9256af797e",
+  FACTORY_ADDRESS: "0xf043b3b59127829673a46ed1db3e23d310bb508f",
   CREATION_FEE: ethers.parseEther("100"), // 100 tokens
 };
 
@@ -62,14 +62,29 @@ const FACTORY_ABI = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: "address", name: "tokenAddress", type: "address" },
-      { indexed: true, internalType: "address", name: "creator", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "tokenAddress",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "creator",
+        type: "address",
+      },
       { indexed: false, internalType: "string", name: "name", type: "string" },
-      { indexed: false, internalType: "string", name: "symbol", type: "string" }
+      {
+        indexed: false,
+        internalType: "string",
+        name: "symbol",
+        type: "string",
+      },
     ],
     name: "TokenCreated",
-    type: "event"
-  }
+    type: "event",
+  },
 ];
 
 // Sample token configurations
@@ -169,7 +184,7 @@ const TOKEN_CONFIGS = [
       minInvestment: ethers.parseEther("5000"), // $5,000 minimum
     },
     totalSupply: ethers.parseEther("500"),
-  }
+  },
 ];
 
 async function createRWAToken(config) {
@@ -212,7 +227,7 @@ async function createRWAToken(config) {
     // Get token address from logs
     const logs = receipt.logs;
     let tokenAddress = null;
-    
+
     // Parse logs to find token address (assuming event is emitted)
     for (const log of logs) {
       try {
@@ -225,10 +240,10 @@ async function createRWAToken(config) {
         // Skip logs that don't match
       }
     }
-    
+
     console.log(`Token created successfully!`);
     console.log(`Token Address: ${tokenAddress}`);
-    
+
     return { txHash: tx.hash, tokenAddress };
   } catch (error) {
     console.error(`Error creating token: ${error.message}`);

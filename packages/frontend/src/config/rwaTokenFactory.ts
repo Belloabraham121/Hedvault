@@ -6,10 +6,10 @@
 export const getRWATokenFactoryAddress = () => {
   // The actual address should be extracted from your broadcast file:
   // /Users/iteoluwakisibello/Documents/Hedvault/packages/contract/broadcast/DeployRWATokenFactory.s.sol/296/run-1754499082.json
-  
+
   // For now, replace this with the actual address from your broadcast file
   // Look for "contractAddress" or "transactionReceipt.contractAddress" in the JSON
-  return '0xYourActualContractAddressHere' as const;
+  return "0xYourActualContractAddressHere" as const;
 };
 
 // Example of how to use the broadcast JSON:
@@ -26,5 +26,24 @@ const getAddressFromBroadcast = () => {
 };
 */
 
-// Default address - update this with your actual deployed address
-export const RWATOKEN_FACTORY_ADDRESS = getRWATokenFactoryAddress();
+// RWATokenFactory address from deployment
+export const RWATOKEN_FACTORY_ADDRESS =
+  "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9" as const;
+
+// RWA Token addresses for frontend integration
+export const RWA_TOKEN_ADDRESSES = {
+  GOLD: "0x0000000000000000000000000000000000636359" as const,
+  SILVER: "0x00000000000000000000000000000000006363ad" as const,
+  REAL_ESTATE: "0x00000000000000000000000000000000006363ba" as const,
+} as const;
+
+// Type for RWA token types
+export type RWATokenType = keyof typeof RWA_TOKEN_ADDRESSES;
+
+// Helper function to get token address by type
+export const getRWATokenAddress = (tokenType: RWATokenType): string => {
+  return RWA_TOKEN_ADDRESSES[tokenType];
+};
+
+// All RWA token addresses as an array
+export const ALL_RWA_TOKEN_ADDRESSES = Object.values(RWA_TOKEN_ADDRESSES);

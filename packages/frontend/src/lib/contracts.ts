@@ -18,6 +18,7 @@ export const CONTRACT_ADDRESSES = {
   PriceOracle: "0x6dcbea0fa11b21a6b9f72bccacefeb0b1ed0b444" as Address,
   RewardsDistributor: "0x9e1fe9f241142ab56804fcd69596812099873a2e" as Address,
   RWAOffchainOracle: "0x526f1fd7e5e6220c8390c14fcb0b5a1c83d36e8d" as Address,
+  RWATokenFactory: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9" as Address,
   SwapEngine: "0x2d23e4b771326626996f368422c7eea48b260f1d" as Address,
 } as const;
 

@@ -1,123 +1,123 @@
-import { useReadContract } from 'wagmi';
-import { Address } from 'viem';
+import { useReadContract } from "wagmi";
+import { Address } from "viem";
 
 // ABI for RWATokenFactory - focusing on the two required functions
 export const RWATOKEN_FACTORY_ABI = [
   {
-    "inputs": [],
-    "name": "getAllRWATokens",
-    "outputs": [
+    inputs: [],
+    name: "getAllRWATokens",
+    outputs: [
       {
-        "internalType": "address[]",
-        "name": "tokens",
-        "type": "address[]"
-      }
+        internalType: "address[]",
+        name: "tokens",
+        type: "address[]",
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    stateMutability: "view",
+    type: "function",
   },
   {
-    "inputs": [],
-    "name": "getAllRWATokensWithInfo",
-    "outputs": [
+    inputs: [],
+    name: "getAllRWATokensWithInfo",
+    outputs: [
       {
-        "internalType": "address[]",
-        "name": "tokenAddresses",
-        "type": "address[]"
+        internalType: "address[]",
+        name: "tokenAddresses",
+        type: "address[]",
       },
       {
-        "components": [
+        components: [
           {
-            "internalType": "address",
-            "name": "tokenAddress",
-            "type": "address"
+            internalType: "address",
+            name: "tokenAddress",
+            type: "address",
           },
           {
-            "internalType": "address",
-            "name": "creator",
-            "type": "address"
+            internalType: "address",
+            name: "creator",
+            type: "address",
           },
           {
-            "internalType": "uint256",
-            "name": "creationTime",
-            "type": "uint256"
+            internalType: "uint256",
+            name: "creationTime",
+            type: "uint256",
           },
           {
-            "components": [
+            components: [
               {
-                "internalType": "string",
-                "name": "assetType",
-                "type": "string"
+                internalType: "string",
+                name: "assetType",
+                type: "string",
               },
               {
-                "internalType": "string",
-                "name": "location",
-                "type": "string"
+                internalType: "string",
+                name: "location",
+                type: "string",
               },
               {
-                "internalType": "uint256",
-                "name": "valuation",
-                "type": "uint256"
+                internalType: "uint256",
+                name: "valuation",
+                type: "uint256",
               },
               {
-                "internalType": "address",
-                "name": "oracle",
-                "type": "address"
+                internalType: "address",
+                name: "oracle",
+                type: "address",
               },
               {
-                "internalType": "uint256",
-                "name": "totalSupply",
-                "type": "uint256"
+                internalType: "uint256",
+                name: "totalSupply",
+                type: "uint256",
               },
               {
-                "internalType": "uint256",
-                "name": "minInvestment",
-                "type": "uint256"
+                internalType: "uint256",
+                name: "minInvestment",
+                type: "uint256",
               },
               {
-                "internalType": "string",
-                "name": "certificationHash",
-                "type": "string"
+                internalType: "string",
+                name: "certificationHash",
+                type: "string",
               },
               {
-                "internalType": "string",
-                "name": "additionalData",
-                "type": "string"
-              }
+                internalType: "string",
+                name: "additionalData",
+                type: "string",
+              },
             ],
-            "internalType": "struct DataTypes.RWAMetadata",
-            "name": "metadata",
-            "type": "tuple"
+            internalType: "struct DataTypes.RWAMetadata",
+            name: "metadata",
+            type: "tuple",
           },
           {
-            "internalType": "uint8",
-            "name": "complianceLevel",
-            "type": "uint8"
+            internalType: "uint8",
+            name: "complianceLevel",
+            type: "uint8",
           },
           {
-            "internalType": "bool",
-            "name": "isListed",
-            "type": "bool"
+            internalType: "bool",
+            name: "isListed",
+            type: "bool",
           },
           {
-            "internalType": "uint256",
-            "name": "tradingVolume",
-            "type": "uint256"
+            internalType: "uint256",
+            name: "tradingVolume",
+            type: "uint256",
           },
           {
-            "internalType": "uint256",
-            "name": "holders",
-            "type": "uint256"
-          }
+            internalType: "uint256",
+            name: "holders",
+            type: "uint256",
+          },
         ],
-        "internalType": "struct DataTypes.AssetInfo[]",
-        "name": "assetInfos",
-        "type": "tuple[]"
-      }
+        internalType: "struct DataTypes.AssetInfo[]",
+        name: "assetInfos",
+        type: "tuple[]",
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
-  }
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 // Type definitions for the contract data
@@ -153,7 +153,7 @@ export function useGetAllRWATokens(factoryAddress: Address) {
   return useReadContract({
     address: factoryAddress,
     abi: RWATOKEN_FACTORY_ABI,
-    functionName: 'getAllRWATokens',
+    functionName: "getAllRWATokens",
   });
 }
 
@@ -162,21 +162,22 @@ export function useGetAllRWATokensWithInfo(factoryAddress: Address) {
   const { data, error, isLoading, refetch } = useReadContract({
     address: factoryAddress,
     abi: RWATOKEN_FACTORY_ABI,
-    functionName: 'getAllRWATokensWithInfo',
+    functionName: "getAllRWATokensWithInfo",
   });
 
-  const tokensWithInfo: RWATokenWithInfo[] = data ? 
-    data[0].map((tokenAddress, index) => ({
-      tokenAddress,
-      assetInfo: data[1][index] as AssetInfo
-    })) : [];
+  const tokensWithInfo: RWATokenWithInfo[] = data
+    ? data[0].map((tokenAddress, index) => ({
+        tokenAddress,
+        assetInfo: data[1][index] as AssetInfo,
+      }))
+    : [];
 
   return {
     data: tokensWithInfo,
     rawData: data,
     error,
     isLoading,
-    refetch
+    refetch,
   };
 }
 
@@ -193,6 +194,6 @@ export function useRWATokenFactory(factoryAddress: Address) {
     refetch: () => {
       tokensQuery.refetch();
       tokensWithInfoQuery.refetch();
-    }
+    },
   };
 }
