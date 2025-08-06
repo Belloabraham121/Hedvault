@@ -5,37 +5,10 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./interfaces/IHedVaultCore.sol";
+import "./interfaces/IChainlink.sol";
 import "./libraries/DataTypes.sol";
 import "./libraries/Events.sol";
 import "./libraries/HedVaultErrors.sol";
-
-// Chainlink interfaces for RWA data
-interface AggregatorV3Interface {
-    function decimals() external view returns (uint8);
-    function description() external view returns (string memory);
-    function version() external view returns (uint256);
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
-}
-
-// Interface for Chainlink Functions (for custom offchain data)
-interface IChainlinkFunctions {
-    function sendRequest(
-        bytes calldata source,
-        bytes calldata secrets,
-        string[] calldata args,
-        uint64 subscriptionId,
-        uint32 gasLimit
-    ) external returns (bytes32 requestId);
-}
 
 /**
  * @title RWAOffchainOracle
