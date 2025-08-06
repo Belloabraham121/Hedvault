@@ -241,7 +241,8 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     constructor(
         address _hedVaultCore,
         address _priceOracle,
-        address _feeRecipient
+        address _feeRecipient,
+        address _rewardsDistributor
     ) {
         if (
             _hedVaultCore == address(0) ||
@@ -256,7 +257,7 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
         feeRecipient = _feeRecipient;
 
         // Initialize rewards distributor
-        _initializeRewards();
+        _initializeRewards(_rewardsDistributor);
 
         // Set up roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -268,12 +269,12 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
 
     /**
      * @notice Initialize rewards distributor connection
-     * @dev Gets RewardsDistributor address from HedVaultCore
+     * @dev Sets RewardsDistributor address directly
+     * @param _rewardsDistributor Address of the rewards distributor contract
      */
-    function _initializeRewards() internal {
-        address rewardsAddr = hedVaultCore.rewardsDistributor();
-        if (rewardsAddr != address(0)) {
-            rewardsDistributor = RewardsDistributor(rewardsAddr);
+    function _initializeRewards(address _rewardsDistributor) internal {
+        if (_rewardsDistributor != address(0)) {
+            rewardsDistributor = RewardsDistributor(_rewardsDistributor);
         }
     }
 
@@ -284,9 +285,19 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
      * @param activityType Type of activity ("lending")
      * @param amount Amount of activity for reward calculation
      */
-    function _distributeReward(address user, string memory activityType, uint256 amount) internal {
+    function _distributeReward(
+        address user,
+        string memory activityType,
+        uint256 amount
+    ) internal {
         if (address(rewardsDistributor) != address(0)) {
-            try rewardsDistributor.distributeActivityReward(user, activityType, amount) {
+            try
+                rewardsDistributor.distributeActivityReward(
+                    user,
+                    activityType,
+                    amount
+                )
+            {
                 // Reward distributed successfully
             } catch {
                 // Silently fail to not block main transaction
@@ -634,8 +645,10 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
         if (totalCollateralSeized > loan.collateralAmount) {
             totalCollateralSeized = loan.collateralAmount;
             // Recalculate components proportionally
-            collateralToSeize = (totalCollateralSeized * INTEREST_RATE_PRECISION) / 
-                (INTEREST_RATE_PRECISION + liquidationBonuses[loan.collateralToken]);
+            collateralToSeize =
+                (totalCollateralSeized * INTEREST_RATE_PRECISION) /
+                (INTEREST_RATE_PRECISION +
+                    liquidationBonuses[loan.collateralToken]);
             liquidationBonus = totalCollateralSeized - collateralToSeize;
         }
 
@@ -660,8 +673,10 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
         }
 
         // Calculate principal repaid before updating loan state
-        uint256 principalRepaid = repayAmount > loan.accruedInterest ? repayAmount - loan.accruedInterest : 0;
-        
+        uint256 principalRepaid = repayAmount > loan.accruedInterest
+            ? repayAmount - loan.accruedInterest
+            : 0;
+
         // Update loan state
         if (repayAmount >= totalDebt) {
             loan.status = LoanStatus.LIQUIDATED;
@@ -680,8 +695,10 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             // Partial liquidation
             // Calculate how much of the repayAmount goes to principal vs interest
             uint256 interestPortion = loan.accruedInterest;
-            uint256 principalPortion = repayAmount > interestPortion ? repayAmount - interestPortion : 0;
-            
+            uint256 principalPortion = repayAmount > interestPortion
+                ? repayAmount - interestPortion
+                : 0;
+
             // Update loan amounts
             if (repayAmount >= interestPortion) {
                 loan.accruedInterest = 0;
@@ -832,7 +849,7 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
     function _isLoanLiquidatable(uint256 loanId) internal returns (bool) {
         // Update loan interest first to ensure we have the latest debt amount
         _updateLoanInterest(loanId);
-        
+
         LoanInfo storage loan = loans[loanId];
         uint256 collateralValue = _getTokenValue(
             loan.collateralToken,
@@ -842,16 +859,15 @@ contract LendingPool is AccessControl, ReentrancyGuard, Pausable {
             loan.borrowToken,
             loan.borrowAmount + loan.accruedInterest
         );
-        
+
         // A loan is liquidatable when health factor < 1.0
         // Health factor = (collateralValue * liquidationThreshold) / (debtValue * INTEREST_RATE_PRECISION)
         // Liquidatable when: (collateralValue * liquidationThreshold) < (debtValue * INTEREST_RATE_PRECISION)
         uint256 liquidationThreshold = collateralFactors[loan.collateralToken];
-        uint256 adjustedCollateralValue = (collateralValue * liquidationThreshold) / INTEREST_RATE_PRECISION;
+        uint256 adjustedCollateralValue = (collateralValue *
+            liquidationThreshold) / INTEREST_RATE_PRECISION;
         uint256 adjustedDebtValue = debtValue;
-        
 
-        
         return adjustedDebtValue > adjustedCollateralValue;
     }
 

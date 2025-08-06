@@ -18,27 +18,28 @@ import "./libraries/HedVaultErrors.sol";
 contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
     // Roles
     bytes32 public constant ORACLE_ADMIN_ROLE = keccak256("ORACLE_ADMIN_ROLE");
-    bytes32 public constant DATA_PROVIDER_ROLE = keccak256("DATA_PROVIDER_ROLE");
+    bytes32 public constant DATA_PROVIDER_ROLE =
+        keccak256("DATA_PROVIDER_ROLE");
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
 
     // Core protocol reference
     IHedVaultCore public immutable hedVaultCore;
-    
+
     // Chainlink Functions router (for offchain data)
     IChainlinkFunctions public chainlinkFunctions;
     uint64 public subscriptionId;
 
     // RWA-specific data structures
     struct RWAAssetData {
-        address assetToken;           // RWA token address
-        string assetType;            // Real estate, commodities, etc.
-        address chainlinkFeed;       // Chainlink price feed (if available)
-        string offchainDataSource;   // API endpoint for offchain data
-        uint256 lastPrice;          // Last known price
-        uint256 lastUpdate;         // Last update timestamp
-        uint256 confidence;         // Data confidence level (0-10000)
-        bool useOffchainData;       // Whether to use offchain data
-        bool isActive;              // Whether asset is active
+        address assetToken; // RWA token address
+        string assetType; // Real estate, commodities, etc.
+        address chainlinkFeed; // Chainlink price feed (if available)
+        string offchainDataSource; // API endpoint for offchain data
+        uint256 lastPrice; // Last known price
+        uint256 lastUpdate; // Last update timestamp
+        uint256 confidence; // Data confidence level (0-10000)
+        bool useOffchainData; // Whether to use offchain data
+        bool isActive; // Whether asset is active
     }
 
     struct OffchainDataRequest {
@@ -51,11 +52,11 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
     }
 
     struct RWAMarketData {
-        uint256 marketCap;          // Total market capitalization
-        uint256 tradingVolume24h;   // 24h trading volume
-        uint256 liquidityIndex;     // Liquidity index (0-10000)
-        uint256 volatilityIndex;    // Volatility index (0-10000)
-        uint256 lastUpdated;       // Last update timestamp
+        uint256 marketCap; // Total market capitalization
+        uint256 tradingVolume24h; // 24h trading volume
+        uint256 liquidityIndex; // Liquidity index (0-10000)
+        uint256 volatilityIndex; // Volatility index (0-10000)
+        uint256 lastUpdated; // Last update timestamp
     }
 
     // State variables
@@ -64,9 +65,9 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
     mapping(address => RWAMarketData) public marketData;
     mapping(string => address[]) public assetsByType;
     mapping(address => bool) public supportedAssets;
-    
+
     address[] public assetList;
-    
+
     // Oracle settings
     uint256 public constant MAX_DATA_AGE = 3600; // 1 hour
     uint256 public constant MIN_CONFIDENCE = 7000; // 70%
@@ -82,20 +83,20 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
         address chainlinkFeed,
         string offchainDataSource
     );
-    
+
     event OffchainDataRequested(
         bytes32 indexed requestId,
         address indexed assetToken,
         string dataSource
     );
-    
+
     event OffchainDataReceived(
         bytes32 indexed requestId,
         address indexed assetToken,
         uint256 price,
         uint256 confidence
     );
-    
+
     event RWAMarketDataUpdated(
         address indexed assetToken,
         uint256 marketCap,
@@ -170,7 +171,12 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
             assetsByType[assetType].push(assetToken);
         }
 
-        emit RWAAssetRegistered(assetToken, assetType, chainlinkFeed, offchainDataSource);
+        emit RWAAssetRegistered(
+            assetToken,
+            assetType,
+            chainlinkFeed,
+            offchainDataSource
+        );
     }
 
     /**
@@ -189,7 +195,7 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
         returns (uint256 price, uint256 timestamp, uint256 confidence)
     {
         RWAAssetData memory asset = rwaAssets[assetToken];
-        
+
         // Check if data is stale
         if (block.timestamp - asset.lastUpdate > MAX_DATA_AGE) {
             revert HedVaultErrors.StalePriceData(assetToken, asset.lastUpdate);
@@ -206,12 +212,16 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
         address assetToken
     ) external onlyRole(DATA_PROVIDER_ROLE) onlyValidAsset(assetToken) {
         RWAAssetData storage asset = rwaAssets[assetToken];
-        
+
         if (asset.chainlinkFeed == address(0)) {
-            revert HedVaultErrors.InvalidConfiguration("No Chainlink feed configured");
+            revert HedVaultErrors.InvalidConfiguration(
+                "No Chainlink feed configured"
+            );
         }
 
-        try AggregatorV3Interface(asset.chainlinkFeed).latestRoundData() returns (
+        try
+            AggregatorV3Interface(asset.chainlinkFeed).latestRoundData()
+        returns (
             uint80 roundId,
             int256 answer,
             uint256,
@@ -229,7 +239,12 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
             asset.lastUpdate = block.timestamp;
             asset.confidence = confidence;
 
-            emit Events.PriceUpdated(assetToken, asset.lastPrice, price, block.timestamp);
+            emit Events.PriceUpdated(
+                assetToken,
+                asset.lastPrice,
+                price,
+                block.timestamp
+            );
         } catch {
             revert HedVaultErrors.OracleUpdateFailed(assetToken);
         }
@@ -245,19 +260,26 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
         string[] calldata parameters
     ) external payable onlyValidAsset(assetToken) {
         if (msg.value < OFFCHAIN_REQUEST_FEE) {
-            revert HedVaultErrors.InsufficientFeePayment(msg.value, OFFCHAIN_REQUEST_FEE);
+            revert HedVaultErrors.InsufficientFeePayment(
+                msg.value,
+                OFFCHAIN_REQUEST_FEE
+            );
         }
 
         RWAAssetData memory asset = rwaAssets[assetToken];
-        
+
         if (!asset.useOffchainData) {
-            revert HedVaultErrors.InvalidConfiguration("Offchain data not enabled for asset");
+            revert HedVaultErrors.InvalidConfiguration(
+                "Offchain data not enabled for asset"
+            );
         }
 
         // Create JavaScript source code for Chainlink Functions
         bytes memory source = abi.encodePacked(
             "const response = await Functions.makeHttpRequest({",
-            "url: '", asset.offchainDataSource, "',",
+            "url: '",
+            asset.offchainDataSource,
+            "',",
             "method: 'GET'",
             "});",
             "if (response.error) throw new Error('API request failed');",
@@ -284,7 +306,11 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
             fulfilled: false
         });
 
-        emit OffchainDataRequested(requestId, assetToken, asset.offchainDataSource);
+        emit OffchainDataRequested(
+            requestId,
+            assetToken,
+            asset.offchainDataSource
+        );
     }
 
     /**
@@ -298,9 +324,11 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
     ) external {
         // Note: In production, this should be restricted to Chainlink Functions router
         OffchainDataRequest storage request = dataRequests[requestId];
-        
+
         if (request.fulfilled) {
-            revert HedVaultErrors.InvalidConfiguration("Request already fulfilled");
+            revert HedVaultErrors.InvalidConfiguration(
+                "Request already fulfilled"
+            );
         }
 
         uint256 price = abi.decode(response, (uint256));
@@ -313,8 +341,18 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
 
         request.fulfilled = true;
 
-        emit OffchainDataReceived(requestId, request.assetToken, price, confidence);
-        emit Events.PriceUpdated(request.assetToken, asset.lastPrice, price, block.timestamp);
+        emit OffchainDataReceived(
+            requestId,
+            request.assetToken,
+            price,
+            confidence
+        );
+        emit Events.PriceUpdated(
+            request.assetToken,
+            asset.lastPrice,
+            price,
+            block.timestamp
+        );
     }
 
     /**
@@ -340,7 +378,12 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
             lastUpdated: block.timestamp
         });
 
-        emit RWAMarketDataUpdated(assetToken, marketCap, volume24h, liquidityIndex);
+        emit RWAMarketDataUpdated(
+            assetToken,
+            marketCap,
+            volume24h,
+            liquidityIndex
+        );
     }
 
     /**
@@ -379,8 +422,12 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
     function _initializeHederaRWAFeeds() internal {
         // Real Estate Index feeds (hypothetical addresses for demonstration)
         rwaTypeFeeds["RealEstate"] = 0x1234567890123456789012345678901234567890;
-        rwaTypeFeeds["PreciousMetals"] = 0x2345678901234567890123456789012345678901;
-        rwaTypeFeeds["Commodities"] = 0x3456789012345678901234567890123456789012;
+        rwaTypeFeeds[
+            "PreciousMetals"
+        ] = 0x2345678901234567890123456789012345678901;
+        rwaTypeFeeds[
+            "Commodities"
+        ] = 0x3456789012345678901234567890123456789012;
         rwaTypeFeeds["Art"] = 0x4567890123456789012345678901234567890123;
         rwaTypeFeeds["Bonds"] = 0x5678901234567890123456789012345678901234;
     }
@@ -396,14 +443,15 @@ contract RWAOffchainOracle is AccessControl, ReentrancyGuard, Pausable {
         uint256 heartbeat
     ) internal view returns (uint256) {
         uint256 age = block.timestamp - updatedAt;
-        
+
         if (age >= heartbeat) {
             return MIN_CONFIDENCE;
         }
-        
+
         uint256 maxConfidence = 10000;
-        uint256 confidenceDecay = ((maxConfidence - MIN_CONFIDENCE) * age) / heartbeat;
-        
+        uint256 confidenceDecay = ((maxConfidence - MIN_CONFIDENCE) * age) /
+            heartbeat;
+
         return maxConfidence - confidenceDecay;
     }
 

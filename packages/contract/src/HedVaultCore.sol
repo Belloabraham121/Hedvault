@@ -42,7 +42,7 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
     address public marketplace;
     address public swapEngine;
     address public lendingPool;
-    address public rewardsDistributor;
+    address private _rewardsDistributor;
     address public priceOracle;
     address public complianceManager;
     address public portfolioManager;
@@ -157,7 +157,7 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
         marketplace = _modules[1];
         swapEngine = _modules[2];
         lendingPool = _modules[3];
-        rewardsDistributor = _modules[4];
+        _rewardsDistributor = _modules[4];
         priceOracle = _modules[5];
         complianceManager = _modules[6];
         portfolioManager = _modules[7];
@@ -218,8 +218,8 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
             oldModule = lendingPool;
             lendingPool = newModule;
         } else if (moduleHash == keccak256(bytes("rewardsDistributor"))) {
-            oldModule = rewardsDistributor;
-            rewardsDistributor = newModule;
+            oldModule = _rewardsDistributor;
+            _rewardsDistributor = newModule;
         } else if (moduleHash == keccak256(bytes("priceOracle"))) {
             oldModule = priceOracle;
             priceOracle = newModule;
@@ -682,7 +682,7 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
         if (marketplace != address(0)) activeModules++;
         if (swapEngine != address(0)) activeModules++;
         if (lendingPool != address(0)) activeModules++;
-        if (rewardsDistributor != address(0)) activeModules++;
+        if (_rewardsDistributor != address(0)) activeModules++;
         if (priceOracle != address(0)) activeModules++;
         if (complianceManager != address(0)) activeModules++;
         if (portfolioManager != address(0)) activeModules++;
@@ -740,7 +740,7 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
             module == marketplace ||
             module == swapEngine ||
             module == lendingPool ||
-            module == rewardsDistributor ||
+            module == _rewardsDistributor ||
             module == priceOracle ||
             module == complianceManager ||
             module == portfolioManager ||
@@ -854,6 +854,14 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
+     * @notice Get rewards distributor address
+     * @return Address of the rewards distributor contract
+     */
+    function rewardsDistributor() external view returns (address) {
+        return _rewardsDistributor;
+    }
+
+    /**
      * @notice Get all module addresses
      * @return modules Array of module addresses
      */
@@ -866,7 +874,7 @@ contract HedVaultCore is Ownable, Pausable, ReentrancyGuard {
         modules[1] = marketplace;
         modules[2] = swapEngine;
         modules[3] = lendingPool;
-        modules[4] = rewardsDistributor;
+        modules[4] = _rewardsDistributor;
         modules[5] = priceOracle;
         modules[6] = complianceManager;
         modules[7] = portfolioManager;
