@@ -1,11 +1,34 @@
 import {
-  getDefaultConfig,
   getDefaultWallets,
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit";
 import { rabbyWallet } from "@rainbow-me/rainbowkit/wallets";
 import { mainnet, polygon, optimism, arbitrum, base } from "viem/chains";
 import { createConfig, http } from "wagmi";
+import { defineChain } from "viem";
+
+// Define Hedera Testnet
+const hederaTestnet = defineChain({
+  id: 296,
+  name: "Hedera Testnet",
+  nativeCurrency: {
+    decimals: 18,
+    name: "HBAR",
+    symbol: "HBAR",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://testnet.hashio.io/api"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "HashScan",
+      url: "https://hashscan.io/testnet",
+    },
+  },
+  testnet: true,
+});
 
 const { wallets } = getDefaultWallets();
 
@@ -27,8 +50,9 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  chains: [mainnet, polygon, optimism, arbitrum, base],
+  chains: [hederaTestnet, mainnet, polygon, optimism, arbitrum, base],
   transports: {
+    [hederaTestnet.id]: http(),
     [mainnet.id]: http(),
     [polygon.id]: http(),
     [optimism.id]: http(),

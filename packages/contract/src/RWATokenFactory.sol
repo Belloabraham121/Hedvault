@@ -41,8 +41,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
     mapping(string => bool) public supportedAssetTypes;
     mapping(string => uint256) public assetTypeCount;
 
-    // Token creation fees
-    uint256 public tokenCreationFee = 100 * 1e18; // 100 HBAR equivalent
+    // Token listing fees
     uint256 public listingFee = 50 * 1e18; // 50 HBAR equivalent
 
     // Minimum requirements
@@ -76,15 +75,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
     event AssetTypeAdded(string assetType, address indexed admin);
     event AssetTypeRemoved(string assetType, address indexed admin);
 
-    modifier onlyApprovedCreator() {
-        if (!approvedCreators[msg.sender] && !hasRole(ADMIN_ROLE, msg.sender)) {
-            revert HedVaultErrors.UnauthorizedAccess(
-                msg.sender,
-                "CREATOR_ROLE"
-            );
-        }
-        _;
-    }
+    // Removed onlyApprovedCreator modifier - anyone can now create RWA tokens
 
     modifier validTokenAddress(address token) {
         if (!isRWAToken[token]) {
@@ -125,24 +116,11 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         string calldata name,
         string calldata symbol,
         uint256 totalSupply
-    )
-        external
-        payable
-        onlyApprovedCreator
-        whenNotPaused
-        nonReentrant
-        returns (address tokenAddress)
-    {
+    ) external whenNotPaused nonReentrant returns (address tokenAddress) {
         // Validate inputs
         _validateTokenCreation(metadata, totalSupply);
 
-        // Check creation fee
-        if (msg.value < tokenCreationFee) {
-            revert HedVaultErrors.InsufficientFeePayment(
-                msg.value,
-                tokenCreationFee
-            );
-        }
+        // No creation fee required
 
         // Increment token ID
         _tokenIdCounter++;
@@ -180,8 +158,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         creatorTokens[msg.sender].push(tokenId);
         assetTypeCount[metadata.assetType]++;
 
-        // Transfer creation fee to protocol
-        _transferFee(tokenCreationFee);
+        // No creation fee to transfer
 
         emit TokenCreated(
             tokenId,
@@ -349,15 +326,7 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         emit AssetTypeRemoved(assetType, msg.sender);
     }
 
-    /**
-     * @notice Update token creation fee
-     * @param newFee New creation fee
-     */
-    function updateTokenCreationFee(
-        uint256 newFee
-    ) external onlyRole(ADMIN_ROLE) {
-        tokenCreationFee = newFee;
-    }
+    // Token creation fee functionality removed
 
     /**
      * @notice Update listing fee
@@ -408,6 +377,43 @@ contract RWATokenFactory is AccessControl, ReentrancyGuard, Pausable {
         string calldata assetType
     ) external view returns (uint256) {
         return assetTypeCount[assetType];
+    }
+
+    /**
+     * @notice Get all RWA token addresses
+     * @return tokens Array of all RWA token addresses
+     */
+    function getAllRWATokens() external view returns (address[] memory tokens) {
+        tokens = new address[](_tokenIdCounter);
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            tokens[i - 1] = tokenById[i];
+        }
+        return tokens;
+    }
+
+    /**
+     * @notice Get all RWA tokens with their asset info
+     * @return tokenAddresses Array of token addresses
+     * @return assetInfos Array of corresponding asset info
+     */
+    function getAllRWATokensWithInfo()
+        external
+        view
+        returns (
+            address[] memory tokenAddresses,
+            DataTypes.AssetInfo[] memory assetInfos
+        )
+    {
+        tokenAddresses = new address[](_tokenIdCounter);
+        assetInfos = new DataTypes.AssetInfo[](_tokenIdCounter);
+
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            address tokenAddr = tokenById[i];
+            tokenAddresses[i - 1] = tokenAddr;
+            assetInfos[i - 1] = assetInfo[tokenAddr];
+        }
+
+        return (tokenAddresses, assetInfos);
     }
 
     // Internal functions

@@ -1,109 +1,237 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Eye, EyeOff, TrendingUp, DollarSign, Activity } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PortfolioCard } from "../ui/portfolio-card"
-import { TransactionItem } from "../ui/transaction-item"
+import { useState } from "react";
+import { Eye, EyeOff, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PortfolioCard } from "../ui/portfolio-card";
+import { TransactionItem } from "../ui/transaction-item";
+import { PredefinedRWATokens } from "../ui/predefined-rwa-tokens";
+import { useRWATokenFactoryTokens } from "@/hooks/useRWATokenFactoryTokens";
+import { useTokenBalance } from "@/hooks/contracts/useLendingPool";
+import { useAccount } from "wagmi";
+import { formatEther } from "viem";
+import { ALL_RWA_TOKEN_ADDRESSES, RWA_TOKEN_ADDRESSES, type RWATokenType } from "@/config/rwaTokenFactory";
+
+// Format large numbers with abbreviations and commas
+const formatLargeNumber = (num: number) => {
+  if (num >= 1e9) {
+    const billions = (num / 1e9);
+    return billions.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'B';
+  } else if (num >= 1e6) {
+    const millions = (num / 1e6);
+    return millions.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+  } else if (num >= 1e3) {
+    const thousands = (num / 1e3);
+    return thousands.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'K';
+  }
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+interface RWAMetadata {
+  assetType: string;
+  location: string;
+  valuation: bigint;
+  oracle: `0x${string}`;
+  totalSupply: bigint;
+  minInvestment: bigint;
+  certificationHash: string;
+  additionalData: string;
+}
+
+interface AssetInfo {
+  tokenAddress: `0x${string}`;
+  creator: `0x${string}`;
+  creationTime: bigint;
+  metadata: RWAMetadata;
+  complianceLevel: number;
+  isListed: boolean;
+  tradingVolume: bigint;
+  holders: bigint;
+}
+
+interface TokenBalanceRowProps {
+  tokenAddress: `0x${string}`;
+  assetInfo: AssetInfo;
+  userAddress: `0x${string}` | undefined;
+  showBalance: boolean;
+}
+
+function TokenBalanceRow({ tokenAddress, assetInfo, userAddress, showBalance }: TokenBalanceRowProps) {
+  const tokenBalance = useTokenBalance(tokenAddress);
+  
+  const formatCurrency = (value: bigint) => {
+    return Number(value) / 1e18;
+  };
+  
+  const userTokenBalance = tokenBalance.data || BigInt(0);
+  const tokenValue = formatCurrency(assetInfo.metadata.valuation);
+  const userBalanceFormatted = Number(formatEther(userTokenBalance));
+  const userValueUSD = userBalanceFormatted * (tokenValue / Number(formatEther(assetInfo.metadata.totalSupply)));
+  
+  return (
+    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
+      <div className="flex justify-between items-center">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h4 className="font-semibold text-white text-lg">
+              {assetInfo.metadata.assetType}
+            </h4>
+            <span className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded">
+              {assetInfo.metadata.location}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-400">Your Balance</p>
+              <p className="text-white font-medium">
+                {showBalance ? `${formatLargeNumber(userBalanceFormatted)} tokens` : "••••••"}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400">Value (USD)</p>
+              <p className="text-green-400 font-medium">
+                {showBalance ? `$${formatLargeNumber(userValueUSD)}` : "••••••"}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400">Token Price</p>
+              <p className="text-white">
+                ${formatLargeNumber(tokenValue / Number(formatEther(assetInfo.metadata.totalSupply)))}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400">Total Supply</p>
+              <p className="text-white">
+                {formatLargeNumber(Number(formatEther(assetInfo.metadata.totalSupply)))} tokens
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function DashboardTab() {
-  const [showBalance, setShowBalance] = useState(true)
+  const [showBalance, setShowBalance] = useState(true);
+  const { allTokensWithInfo } = useRWATokenFactoryTokens();
+  const { address: userAddress } = useAccount();
 
-  const portfolioData = [
-    {
-      asset: "Real Estate Token",
-      symbol: "RET",
-      category: "Real Estate",
-      balance: "1,250.00",
-      value: "$125,000",
-      change: "+5.2%",
-      purchasePrice: "$95.50",
-      currentPrice: "$100.00",
-      unrealizedPnL: "+$5,625",
-      apy: "8.5%",
-      lastUpdated: "2 min ago",
-      status: "Active",
-      location: "New York, USA",
-    },
-    {
-      asset: "Gold Commodity",
-      symbol: "GOLD",
-      category: "Commodities",
-      balance: "50.75",
-      value: "$95,250",
-      change: "+2.1%",
-      purchasePrice: "$1,820.00",
-      currentPrice: "$1,878.00",
-      unrealizedPnL: "+$2,942",
-      apy: "6.2%",
-      lastUpdated: "1 min ago",
-      status: "Active",
-      location: "LBMA Certified",
-    },
-    {
-      asset: "Invoice Token",
-      symbol: "INV",
-      category: "Trade Finance",
-      balance: "2,100.00",
-      value: "$42,000",
-      change: "+1.8%",
-      purchasePrice: "$19.50",
-      currentPrice: "$20.00",
-      unrealizedPnL: "+$1,050",
-      apy: "12.3%",
-      lastUpdated: "5 min ago",
-      status: "Active",
-      location: "Global Supply Chain",
-    },
-    {
-      asset: "Art Collection",
-      symbol: "ART",
-      category: "Collectibles",
-      balance: "15.00",
-      value: "$75,000",
-      change: "+8.5%",
-      purchasePrice: "$4,500.00",
-      currentPrice: "$5,000.00",
-      unrealizedPnL: "+$7,500",
-      apy: "4.2%",
-      lastUpdated: "1 hour ago",
-      status: "Active",
-      location: "Sotheby's Verified",
-    },
-  ]
+  const tokensData = allTokensWithInfo.data || [[], []];
+  const [tokenAddresses, assetInfos] = [
+    Array.from(tokensData[0] || []),
+    Array.from(tokensData[1] || [])
+  ];
 
+  // Get balances for predefined RWA tokens
+  const goldBalance = useTokenBalance(RWA_TOKEN_ADDRESSES.GOLD as `0x${string}`);
+  const silverBalance = useTokenBalance(RWA_TOKEN_ADDRESSES.SILVER as `0x${string}`);
+  const realEstateBalance = useTokenBalance(RWA_TOKEN_ADDRESSES.REAL_ESTATE as `0x${string}`);
+
+  // Format currency helper function
+  const formatCurrency = (value: bigint) => {
+    return Number(value) / 1e18;
+  };
+
+  // Calculate total portfolio value from user's actual token holdings
+  const calculateUserPortfolioValue = () => {
+    let totalValue = 0;
+    
+    // Add predefined token values (assuming $1 per token for now)
+    const goldValue = goldBalance.data ? Number(formatEther(goldBalance.data)) * 2000 : 0; // $2000 per gold token
+    const silverValue = silverBalance.data ? Number(formatEther(silverBalance.data)) * 25 : 0; // $25 per silver token  
+    const realEstateValue = realEstateBalance.data ? Number(formatEther(realEstateBalance.data)) * 500 : 0; // $500 per RE token
+    
+    totalValue += goldValue + silverValue + realEstateValue;
+    
+    // Add factory-created token values
+    tokenAddresses.forEach((address: `0x${string}`, index: number) => {
+      const info = assetInfos[index];
+      if (!info) return;
+      
+      const tokenValue = formatCurrency(info.metadata.valuation);
+      const pricePerToken = tokenValue / Number(formatEther(info.metadata.totalSupply));
+      // We would need individual balance hooks for each token to calculate actual value
+    });
+    
+    return totalValue;
+  };
+
+  const totalValue = calculateUserPortfolioValue();
+  const totalTokenCount = tokenAddresses.length + (goldBalance.data && goldBalance.data > 0 ? 1 : 0) + (silverBalance.data && silverBalance.data > 0 ? 1 : 0) + (realEstateBalance.data && realEstateBalance.data > 0 ? 1 : 0);
+
+  // Mock transactions for now - can be enhanced with real data later
   const recentTransactions = [
-    { type: "Buy", asset: "RET", amount: "100.00", value: "$10,000", time: "2 hours ago" },
-    { type: "Swap", asset: "GOLD → INV", amount: "5.25", value: "$5,250", time: "1 day ago" },
-    { type: "Lend", asset: "ART", amount: "2.00", value: "$10,000", time: "3 days ago" },
-    { type: "Reward", asset: "RET", amount: "12.50", value: "$1,250", time: "1 week ago" },
-  ]
+    {
+      type: "Buy",
+      asset: "RET",
+      amount: "100.00",
+      value: "$10,000",
+      time: "2 hours ago",
+    },
+    {
+      type: "Swap",
+      asset: "GOLD → INV",
+      amount: "5.25",
+      value: "$5,250",
+      time: "1 day ago",
+    },
+    {
+      type: "Lend",
+      asset: "ART",
+      amount: "2.00",
+      value: "$10,000",
+      time: "3 days ago",
+    },
+    {
+      type: "Reward",
+      asset: "RET",
+      amount: "12.50",
+      value: "$1,250",
+      time: "1 week ago",
+    },
+  ];
 
   return (
     <div className="space-y-8">
       {/* Portfolio Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PortfolioCard
-          title="Total Portfolio Value"
-          value={showBalance ? "$337,250" : "••••••"}
-          change="+4.2% (24h)"
+           title="Total Portfolio Value"
+           value={showBalance ? `$${formatLargeNumber(totalValue)}` : "••••••"}
+           change={`${totalTokenCount} RWA tokens`}
+           changeType="positive"
+         >
+           <Button
+             variant="ghost"
+             size="sm"
+             onClick={() => setShowBalance(!showBalance)}
+             className="text-gray-400 hover:text-white"
+           >
+             {showBalance ? (
+               <Eye className="h-4 w-4" />
+             ) : (
+               <EyeOff className="h-4 w-4" />
+             )}
+           </Button>
+         </PortfolioCard>
+
+        <PortfolioCard
+          title="Active Positions"
+          value={assetInfos.length.toString()}
+          change={`Across ${
+            new Set(assetInfos.map((info) => info.metadata.assetType)).size
+          } asset classes`}
+        />
+
+        <PortfolioCard
+          title="Monthly Rewards"
+          value="$0"
+          change="Coming soon"
           changeType="positive"
-          className="lg:col-span-1"
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowBalance(!showBalance)}
-            className="text-gray-400 hover:text-white"
-          >
-            {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
-        </PortfolioCard>
-
-        <PortfolioCard title="Active Positions" value="4" change="Across 4 asset classes" />
-
-        <PortfolioCard title="Monthly Rewards" value="$2,847" change="+12.5% vs last month" changeType="positive" />
+        />
       </div>
 
       {/* Quick Actions */}
@@ -122,113 +250,124 @@ export function DashboardTab() {
         </Button>
       </div>
 
-      {/* Portfolio Holdings */}
+      {/* Predefined RWA Tokens */}
+      <PredefinedRWATokens className="bg-gray-950/80 backdrop-blur-sm border-gray-800" />
+
+      {/* Portfolio Holdings with User Balances */}
       <Card className="bg-gray-950/80 backdrop-blur-sm border-gray-800">
         <CardHeader className="pb-6">
-          <CardTitle className="text-2xl font-bold text-white">Portfolio Holdings</CardTitle>
-          <p className="text-gray-400">Your tokenized real-world assets</p>
+          <CardTitle className="text-2xl font-bold text-white">
+            My Portfolio Holdings
+          </CardTitle>
+          <p className="text-gray-400">
+            Your RWA token balances and values
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {portfolioData.map((item, index) => (
-              <div
-                key={index}
-                className="p-6 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 hover:bg-gray-800/60 transition-all duration-200"
-              >
-                {/* Header Row */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                      <span className="text-green-400 font-bold text-sm">{item.symbol}</span>
+          <div className="space-y-4">
+            {/* Predefined RWA Tokens */}
+            {goldBalance.data && goldBalance.data > 0 && (
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-semibold text-white text-lg">Gold Token</h4>
+                      <span className="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded">Physical Gold</span>
                     </div>
-                    <div>
-                      <div className="flex items-center space-x-3">
-                        <h3 className="text-white font-semibold text-lg">{item.asset}</h3>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                          {item.category}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            item.status === "Active"
-                              ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                              : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-400">Your Balance</p>
+                        <p className="text-white font-medium">
+                           {showBalance ? `${formatLargeNumber(Number(formatEther(goldBalance.data)))} GOLD` : "••••••"}
+                         </p>
                       </div>
-                      <p className="text-gray-400 text-sm mt-1">
-                        {item.balance} {item.symbol} • {item.location}
-                      </p>
+                      <div>
+                        <p className="text-gray-400">Value (USD)</p>
+                        <p className="text-green-400 font-medium">
+                           {showBalance ? `$${formatLargeNumber(Number(formatEther(goldBalance.data)) * 2000)}` : "••••••"}
+                         </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-white font-semibold text-xl">{item.value}</p>
-                    <p className="text-green-400 text-sm font-medium">{item.change} (24h)</p>
-                  </div>
-                </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Current Price</p>
-                    <p className="text-white font-semibold">{item.currentPrice}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Purchase Price</p>
-                    <p className="text-gray-300 font-medium">{item.purchasePrice}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Unrealized P&L</p>
-                    <p className="text-green-400 font-semibold">{item.unrealizedPnL}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">APY</p>
-                    <p className="text-purple-400 font-semibold">{item.apy}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Last Updated</p>
-                    <p className="text-gray-300 font-medium">{item.lastUpdated}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Holdings</p>
-                    <p className="text-white font-semibold">{item.balance}</p>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-700/50">
-                  <Button
-                    size="sm"
-                    className="bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30"
-                  >
-                    Buy More
-                  </Button>
-                  <Button size="sm" className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30">
-                    Sell
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                  >
-                    Swap
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                  >
-                    Lend
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-gray-600 text-gray-300 bg-transparent hover:bg-gray-800/50"
-                  >
-                    View Details
-                  </Button>
                 </div>
               </div>
-            ))}
+            )}
+            {silverBalance.data && silverBalance.data > 0 && (
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-semibold text-white text-lg">Silver Token</h4>
+                      <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded">Physical Silver</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-400">Your Balance</p>
+                        <p className="text-white font-medium">
+                           {showBalance ? `${formatLargeNumber(Number(formatEther(silverBalance.data)))} SILVER` : "••••••"}
+                         </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">Value (USD)</p>
+                        <p className="text-green-400 font-medium">
+                           {showBalance ? `$${formatLargeNumber(Number(formatEther(silverBalance.data)) * 25)}` : "••••••"}
+                         </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {realEstateBalance.data && realEstateBalance.data > 0 && (
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-semibold text-white text-lg">Real Estate Token</h4>
+                      <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded">Real Estate</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-400">Your Balance</p>
+                        <p className="text-white font-medium">
+                           {showBalance ? `${formatLargeNumber(Number(formatEther(realEstateBalance.data)))} RE` : "••••••"}
+                         </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">Value (USD)</p>
+                        <p className="text-green-400 font-medium">
+                           {showBalance ? `$${formatLargeNumber(Number(formatEther(realEstateBalance.data)) * 500)}` : "••••••"}
+                         </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Factory-created RWA Tokens */}
+            {tokenAddresses.length > 0 ? (
+              tokenAddresses.map((address: `0x${string}`, index: number) => {
+                const info = assetInfos[index];
+                if (!info) return null;
+                
+                return (
+                  <TokenBalanceRow 
+                    key={address}
+                    tokenAddress={address}
+                    assetInfo={info}
+                    userAddress={userAddress}
+                    showBalance={showBalance}
+                  />
+                );
+              })
+            ) : null}
+            
+            {totalTokenCount === 0 && (
+              <p className="text-gray-400 text-center py-8">
+                No RWA tokens found. Your token balances will appear here once you acquire RWA tokens.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -237,8 +376,12 @@ export function DashboardTab() {
       <div className="relative">
         <Card className="bg-gray-950/80 backdrop-blur-sm border-gray-800">
           <CardHeader className="pb-6">
-            <CardTitle className="text-2xl font-bold text-white">Recent Activity</CardTitle>
-            <p className="text-gray-400">Your latest transactions and activities</p>
+            <CardTitle className="text-2xl font-bold text-white">
+              Recent Activity
+            </CardTitle>
+            <p className="text-gray-400">
+              Your latest transactions and activities
+            </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -252,5 +395,5 @@ export function DashboardTab() {
         {/* Small Bottom Left Card */}
       </div>
     </div>
-  )
+  );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Settings, Wallet } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export function DashboardHeader() {
   return (
@@ -31,10 +32,7 @@ export function DashboardHeader() {
           >
             <Settings className="h-4 w-4" />
           </Button>
-          <Button className="bg-green-500 hover:bg-green-600 text-black">
-            <Wallet className="h-4 w-4 mr-2" />
-            Connect Wallet
-          </Button>
+          <ConnectButton />
         </div>
       </div>
     </header>

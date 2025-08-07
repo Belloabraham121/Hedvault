@@ -12,6 +12,34 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface DetailedReward {
+  asset: string;
+  symbol: string;
+  category: string;
+  type: string;
+  amount: string;
+  pendingAmount: string;
+  apy: string;
+  frequency: string;
+  nextReward: string;
+  totalStaked: string;
+  rewardToken: string;
+  autoCompound: boolean;
+  lastClaimed: string;
+  claimableAmount: string;
+  performance30d: string;
+  location: string;
+}
+
+interface RewardHistoryItem {
+  date: string;
+  asset: string;
+  type: string;
+  amount: string;
+  token: string;
+  txHash: string;
+}
+
 export function RewardsTab() {
   const [activeRewardType, setActiveRewardType] = useState("all");
 
@@ -20,9 +48,9 @@ export function RewardsTab() {
       id: "lending",
       name: "Lending Interest",
       icon: TrendingUp,
-      totalEarned: "$3,150",
-      pendingRewards: "$234",
-      apy: "7.8%",
+      totalEarned: "$0",
+      pendingRewards: "$0",
+      apy: "0%",
       color: "text-blue-400",
       bgColor: "bg-blue-500/10",
       borderColor: "border-blue-500/20",
@@ -31,108 +59,25 @@ export function RewardsTab() {
       id: "yield",
       name: "Yield Farming",
       icon: BarChart3,
-      totalEarned: "$1,450",
-      pendingRewards: "$108",
-      apy: "12.5%",
+      totalEarned: "$0",
+      pendingRewards: "$0",
+      apy: "0%",
       color: "text-purple-400",
       bgColor: "bg-purple-500/10",
       borderColor: "border-purple-500/20",
     },
   ];
 
-  const detailedRewards = [
-    {
-      asset: "Invoice Token",
-      symbol: "INV",
-      category: "lending",
-      type: "Trade Finance Interest",
-      amount: "$1,650",
-      pendingAmount: "$156",
-      apy: "12.3%",
-      frequency: "Monthly",
-      nextReward: "12 days",
-      totalStaked: "2,100.00 INV",
-      rewardToken: "USDC",
-      autoCompound: true,
-      lastClaimed: "18 days ago",
-      claimableAmount: "$156.20",
-      performance30d: "+15.2%",
-      location: "Global Supply Chain",
-    },
-    {
-      asset: "Art Collection",
-      symbol: "ART",
-      category: "yield",
-      type: "Liquidity Mining",
-      amount: "$987",
-      pendingAmount: "$89",
-      apy: "4.2%",
-      frequency: "Bi-weekly",
-      nextReward: "8 days",
-      totalStaked: "15.00 ART",
-      rewardToken: "HedVault Token",
-      autoCompound: false,
-      lastClaimed: "6 days ago",
-      claimableAmount: "$89.40",
-      performance30d: "+6.1%",
-      location: "Sotheby's Verified",
-    },
-  ];
+  const detailedRewards: DetailedReward[] = [];
 
-  const rewardHistory = [
-    {
-      date: "2024-01-15",
-      asset: "RET",
-      type: "Staking",
-      amount: "$347.50",
-      token: "HBAR",
-      txHash: "0x1234...5678",
-    },
-    {
-      date: "2024-01-10",
-      asset: "GOLD",
-      type: "Commodity Yield",
-      amount: "$234.80",
-      token: "USDC",
-      txHash: "0xabcd...efgh",
-    },
-    {
-      date: "2024-01-08",
-      asset: "INV",
-      type: "Interest",
-      amount: "$156.20",
-      token: "USDC",
-      txHash: "0x9876...5432",
-    },
-  ];
+  const rewardHistory: RewardHistoryItem[] = [];
 
-  const filteredRewards =
-    activeRewardType === "all"
-      ? detailedRewards
-      : detailedRewards.filter(
-          (reward) => reward.category === activeRewardType
-        );
+  const filteredRewards: DetailedReward[] = [];
 
   const totalStats = {
-    totalEarned: detailedRewards.reduce(
-      (sum, reward) =>
-        sum +
-        Number.parseFloat(reward.amount.replace("$", "").replace(",", "")),
-      0
-    ),
-    totalPending: detailedRewards.reduce(
-      (sum, reward) =>
-        sum +
-        Number.parseFloat(
-          reward.pendingAmount.replace("$", "").replace(",", "")
-        ),
-      0
-    ),
-    avgApy:
-      detailedRewards.reduce(
-        (sum, reward) => sum + Number.parseFloat(reward.apy.replace("%", "")),
-        0
-      ) / detailedRewards.length,
+    totalEarned: 0,
+    totalPending: 0,
+    avgApy: 0,
   };
 
   return (
@@ -149,8 +94,8 @@ export function RewardsTab() {
             <div className="text-3xl font-bold text-green-400">
               ${totalStats.totalEarned.toLocaleString()}
             </div>
-            <p className="text-sm mt-2 font-medium text-green-400">
-              +18.5% this month
+            <p className="text-sm mt-2 font-medium text-gray-400">
+              Coming soon
             </p>
           </CardContent>
         </Card>
@@ -166,7 +111,7 @@ export function RewardsTab() {
               ${totalStats.totalPending.toLocaleString()}
             </div>
             <p className="text-sm mt-2 font-medium text-gray-400">
-              Ready to claim
+              Coming soon
             </p>
           </CardContent>
         </Card>
@@ -182,7 +127,7 @@ export function RewardsTab() {
               {totalStats.avgApy.toFixed(1)}%
             </div>
             <p className="text-sm mt-2 font-medium text-gray-400">
-              Across all assets
+              Coming soon
             </p>
           </CardContent>
         </Card>
@@ -198,7 +143,7 @@ export function RewardsTab() {
               {detailedRewards.length}
             </div>
             <p className="text-sm mt-2 font-medium text-gray-400">
-              Earning rewards
+              Coming soon
             </p>
           </CardContent>
         </Card>
@@ -301,11 +246,17 @@ export function RewardsTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {filteredRewards.map((reward, index) => (
-              <div
-                key={index}
-                className="p-6 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 hover:bg-gray-800/60 transition-all duration-200"
-              >
+            {filteredRewards.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg mb-2">No rewards available yet</p>
+                <p className="text-gray-500">Coming soon</p>
+              </div>
+            ) : (
+              filteredRewards.map((reward, index) => (
+                <div
+                  key={index}
+                  className="p-6 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 hover:bg-gray-800/60 transition-all duration-200"
+                >
                 {/* Header Row */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-4">
@@ -443,7 +394,8 @@ export function RewardsTab() {
                   </Button>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -459,11 +411,17 @@ export function RewardsTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {rewardHistory.map((claim, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-700/50"
-              >
+            {rewardHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg mb-2">No reward history yet</p>
+                <p className="text-gray-500">Coming soon</p>
+              </div>
+            ) : (
+              rewardHistory.map((claim, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-700/50"
+                >
                 <div className="flex items-center space-x-4">
                   <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                     <Gift className="h-5 w-5 text-green-400" />
@@ -484,7 +442,8 @@ export function RewardsTab() {
                   <p className="text-gray-400 text-xs">{claim.txHash}</p>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
