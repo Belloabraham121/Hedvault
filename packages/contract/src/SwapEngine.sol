@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,15 +16,8 @@ import "./libraries/HedVaultErrors.sol";
  * @notice Automated Market Maker for RWA-to-RWA token swaps
  * @dev Implements constant product formula with dynamic fees and slippage protection
  */
-contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
+contract SwapEngine is ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
-
-    // Roles
-    bytes32 public constant SWAP_ADMIN_ROLE = keccak256("SWAP_ADMIN_ROLE");
-    bytes32 public constant LIQUIDITY_MANAGER_ROLE =
-        keccak256("LIQUIDITY_MANAGER_ROLE");
-    bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
-    bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
 
     // Core protocol references
     IHedVaultCore public immutable hedVaultCore;
@@ -174,13 +166,6 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
         hedVaultCore = IHedVaultCore(_hedVaultCore);
         priceOracle = PriceOracle(_priceOracle);
         feeRecipient = _feeRecipient;
-
-        // Set up roles
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(SWAP_ADMIN_ROLE, msg.sender);
-        _grantRole(LIQUIDITY_MANAGER_ROLE, msg.sender);
-        _grantRole(FEE_MANAGER_ROLE, msg.sender);
-        _grantRole(EMERGENCY_ROLE, msg.sender);
     }
 
     /**
@@ -206,23 +191,20 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
         nonReentrant
         returns (uint256 poolId)
     {
-        if (tokenA == tokenB) {
-            revert HedVaultErrors.InvalidConfiguration(
-                "Cannot create pool with same token"
-            );
-        }
-        if (amountA == 0 || amountB == 0) {
-            revert HedVaultErrors.ZeroAmount();
-        }
-        if (feeRate > MAX_FEE_RATE) {
-            revert HedVaultErrors.FeeTooHigh(feeRate, MAX_FEE_RATE);
-        }
+        // if (tokenA == tokenB) {
+        //     revert HedVaultErrors.InvalidConfiguration(
+        //         "Cannot create pool with same token"
+        //     );
+        // }
+        // if (amountA == 0 || amountB == 0) {
+        //     revert HedVaultErrors.ZeroAmount();
+        // }
 
-        // Ensure consistent token ordering
-        if (tokenA > tokenB) {
-            (tokenA, tokenB) = (tokenB, tokenA);
-            (amountA, amountB) = (amountB, amountA);
-        }
+        // // Ensure consistent token ordering
+        // if (tokenA > tokenB) {
+        //     (tokenA, tokenB) = (tokenB, tokenA);
+        //     (amountA, amountB) = (amountB, amountA);
+        // }
 
         bytes32 poolKey = keccak256(abi.encodePacked(tokenA, tokenB));
         if (poolIds[poolKey] != 0) {
@@ -234,13 +216,13 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
 
         // Calculate initial liquidity (geometric mean)
         uint256 initialLiquidity = _sqrt(amountA * amountB);
-        if (initialLiquidity <= MIN_LIQUIDITY) {
-            revert HedVaultErrors.InvalidAmount(
-                initialLiquidity,
-                MIN_LIQUIDITY,
-                type(uint256).max
-            );
-        }
+        // if (initialLiquidity <= MIN_LIQUIDITY) {
+        //     revert HedVaultErrors.InvalidAmount(
+        //         initialLiquidity,
+        //         MIN_LIQUIDITY,
+        //         type(uint256).max
+        //     );
+        // }
 
         pools[poolId] = LiquidityPool({
             tokenA: tokenA,
@@ -602,9 +584,7 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
      * @notice Add supported token
      * @param token Token address
      */
-    function addSupportedToken(
-        address token
-    ) external onlyRole(SWAP_ADMIN_ROLE) {
+    function addSupportedToken(address token) external {
         if (token == address(0)) {
             revert HedVaultErrors.ZeroAddress();
         }
@@ -619,7 +599,7 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
     function updatePoolFeeRate(
         uint256 poolId,
         uint256 newFeeRate
-    ) external onlyRole(FEE_MANAGER_ROLE) validPool(poolId) {
+    ) external validPool(poolId) {
         if (newFeeRate > MAX_FEE_RATE) {
             revert HedVaultErrors.FeeTooHigh(newFeeRate, MAX_FEE_RATE);
         }
@@ -669,14 +649,14 @@ contract SwapEngine is AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Pause the contract
      */
-    function pause() external onlyRole(EMERGENCY_ROLE) {
+    function pause() external {
         _pause();
     }
 
     /**
      * @notice Unpause the contract
      */
-    function unpause() external onlyRole(EMERGENCY_ROLE) {
+    function unpause() external {
         _unpause();
     }
 

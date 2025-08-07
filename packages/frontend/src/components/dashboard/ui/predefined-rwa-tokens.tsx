@@ -52,8 +52,8 @@ interface PredefinedRWATokensProps {
 export function PredefinedRWATokens({ className }: PredefinedRWATokensProps) {
   const handleViewOnExplorer = (tokenType: RWATokenType) => {
     const address = getRWATokenAddress(tokenType);
-    // Using a generic blockchain explorer - update with the correct network explorer
-    window.open(`https://etherscan.io/address/${address}`, "_blank");
+    // Using HashScan (Hedera's official explorer) for contract viewing
+    window.open(`https://hashscan.io/testnet/contract/${address}`, "_blank");
   };
 
   return (

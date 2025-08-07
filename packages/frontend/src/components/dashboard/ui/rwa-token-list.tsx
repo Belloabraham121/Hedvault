@@ -161,7 +161,7 @@ export function RWATokenList({ className }: RWATokenListProps) {
                     className="text-blue-400 hover:text-blue-300"
                     onClick={() =>
                       window.open(
-                        `https://testnet.etherscan.io/address/${address}`,
+                        `https://hashscan.io/testnet/contract/${address}`,
                         "_blank"
                       )
                     }

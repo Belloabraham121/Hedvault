@@ -31,9 +31,21 @@ export const RWATOKEN_FACTORY_ADDRESS =
   "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9" as const;
 
 // RWA Token addresses for frontend integration
+// These are Hedera token addresses in EVM format (long-zero format)
 export const RWA_TOKEN_ADDRESSES = {
   GOLD: "0x0000000000000000000000000000000000636359" as const,
   SILVER: "0x00000000000000000000000000000000006363ad" as const,
+  REAL_ESTATE: "0x00000000000000000000000000000000006363ba" as const,
+} as const;
+
+// Alternative: If the above addresses don't work, try these converted formats
+// These convert the Hedera token IDs to proper EVM addresses
+export const ALTERNATIVE_TOKEN_ADDRESSES = {
+  // Token ID 0.0.6513497 (636359 in hex) -> proper EVM format
+  GOLD: "0x0000000000000000000000000000000000636359" as const,
+  // Token ID 0.0.6513581 (6363ad in hex) -> proper EVM format
+  SILVER: "0x00000000000000000000000000000000006363ad" as const,
+  // Token ID 0.0.6513594 (6363ba in hex) -> proper EVM format
   REAL_ESTATE: "0x00000000000000000000000000000000006363ba" as const,
 } as const;
 
