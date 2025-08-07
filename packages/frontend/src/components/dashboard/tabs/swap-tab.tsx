@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeftRight, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SwapInput } from "../ui/swap-input";
 import { usePredefinedRWATokens } from "@/hooks/usePredefinedRWATokens";
 import {
@@ -25,6 +36,23 @@ export function SwapTab() {
   const [fromAsset, setFromAsset] = useState<string | null>(null);
   const [toAsset, setToAsset] = useState<string | null>(null);
   const [slippage] = useState("0.5");
+
+  // Debounced fromValue to prevent excessive API calls
+  const [debouncedFromValue, setDebouncedFromValue] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFromValue(fromValue);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [fromValue]);
+
+  // Modal state
+  const [isCreatePoolModalOpen, setIsCreatePoolModalOpen] = useState(false);
+  const [poolAmountA, setPoolAmountA] = useState("");
+  const [poolAmountB, setPoolAmountB] = useState("");
+  const [poolFeeRate, setPoolFeeRate] = useState("300"); // 3% default
 
   const { tokens } = usePredefinedRWATokens();
   const { isConnected } = useAccount();
@@ -93,6 +121,7 @@ export function SwapTab() {
     isPending: isCreatingPool,
     isConfirmed: poolCreated,
     hash: createPoolHash,
+    error: createPoolError,
   } = useCreatePool();
 
   // Types for pool data
@@ -104,6 +133,7 @@ export function SwapTab() {
   }
 
   // LocalStorage functions for pool data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const savePoolToLocalStorage = (
     tokenA: string,
     tokenB: string,
@@ -163,20 +193,36 @@ export function SwapTab() {
     isToTokenSupported,
   ]);
 
-  // Function to add unsupported tokens
+  // Function to add unsupported tokens with real approval
   const handleAddSupportedTokens = async () => {
     try {
+      console.log(
+        "🔧 Adding token support with real blockchain transactions..."
+      );
+
       if (fromTokenAddress && !isFromTokenSupported) {
         console.log("➕ Adding support for fromToken:", fromTokenAddress);
+        // This calls the actual blockchain transaction
         addSupportedToken(fromTokenAddress as Address);
+        toast.success(
+          `Adding support for ${getAssetDisplayName(fromAsset)}...`
+        );
       }
       if (toTokenAddress && !isToTokenSupported) {
         console.log("➕ Adding support for toToken:", toTokenAddress);
+        // This calls the actual blockchain transaction
         addSupportedToken(toTokenAddress as Address);
+        toast.success(`Adding support for ${getAssetDisplayName(toAsset)}...`);
       }
+
+      console.log("📝 Token support transactions submitted to blockchain");
     } catch (error) {
       console.error("❌ Error adding token support:", error);
-      toast.error("Failed to add token support");
+      toast.error(
+        `Failed to add token support: ${
+          (error as Error)?.message || "Unknown error"
+        }`
+      );
     }
   };
 
@@ -191,19 +237,19 @@ export function SwapTab() {
   // Debug: Check nextPoolId and actual pool existence
   const { data: nextPoolIdData } = useGetNextPoolId();
 
-  // Handle pool creation
+  // Handle pool creation with token approval
   const handleCreatePool = async () => {
-    if (!fromTokenAddress || !toTokenAddress || !fromValue) {
-      toast.error("Please select tokens and enter an amount");
+    if (!fromTokenAddress || !toTokenAddress || !poolAmountA || !poolAmountB) {
+      toast.error("Please fill in all required fields");
       return;
     }
 
     try {
-      const amountA = parseUnits(fromValue, 18);
-      const amountB = parseUnits(fromValue, 18); // Using same amount for both tokens
-      const feeRate = BigInt(300); // 3% fee rate (300 basis points)
+      const amountA = parseUnits(poolAmountA, 18);
+      const amountB = parseUnits(poolAmountB, 18);
+      const feeRate = BigInt(poolFeeRate); // Fee rate in basis points
 
-      console.log("🏊 Creating pool with:", {
+      console.log("🏊 Creating pool with token approval:", {
         tokenA: fromTokenAddress,
         tokenB: toTokenAddress,
         amountA: amountA.toString(),
@@ -211,6 +257,40 @@ export function SwapTab() {
         feeRate: feeRate.toString(),
       });
 
+      // Step 1: Approve tokens for SwapEngine
+      console.log("🔓 Approving tokens for SwapEngine...");
+
+      // Import writeContract for token approvals
+      const { writeContract } = await import("wagmi/actions");
+      const { config } = await import("@/lib/wagmi");
+      const { RWA_TOKEN_ABI } = await import("@/hooks/usePredefinedRWATokens");
+      const { CONTRACT_ADDRESSES } = await import("@/lib/contracts");
+
+      // Approve token A
+      await writeContract(config, {
+        address: fromTokenAddress as Address,
+        abi: RWA_TOKEN_ABI,
+        functionName: "approve",
+        args: [CONTRACT_ADDRESSES.SwapEngine, amountA],
+        gas: BigInt(500000), // Set higher gas limit for token approval
+      });
+
+      console.log("✅ Token A approved");
+      toast.success("✅ Token A approved successfully!");
+
+      // Approve token B
+      await writeContract(config, {
+        address: toTokenAddress as Address,
+        abi: RWA_TOKEN_ABI,
+        functionName: "approve",
+        args: [CONTRACT_ADDRESSES.SwapEngine, amountB],
+        gas: BigInt(500000), // Set higher gas limit for token approval
+      });
+
+      console.log("✅ Token B approved");
+      toast.success("✅ Token B approved successfully!");
+
+      // Step 2: Create the pool
       createPool(
         fromTokenAddress as Address,
         toTokenAddress as Address,
@@ -219,10 +299,18 @@ export function SwapTab() {
         feeRate
       );
 
-      toast.success("Pool creation initiated!");
+      toast.success("Pool creation with token approval initiated!");
+      setIsCreatePoolModalOpen(false);
+
+      // Reset form
+      setPoolAmountA("");
+      setPoolAmountB("");
+      setPoolFeeRate("300");
     } catch (error) {
-      console.error("❌ Error creating pool:", error);
-      toast.error("Failed to create pool");
+      console.error("❌ Error creating pool with approval:", error);
+      toast.error(
+        `Failed to create pool: ${(error as Error)?.message || "Unknown error"}`
+      );
     }
   };
 
@@ -239,7 +327,10 @@ export function SwapTab() {
 
       savePoolToLocalStorage(fromTokenAddress, toTokenAddress, estimatedPoolId);
       toast.success(
-        `Pool created successfully! Pool ID: ${estimatedPoolId.slice(0, 10)}...`
+        `🎉 Pool created successfully! Pool ID: ${estimatedPoolId.slice(
+          0,
+          10
+        )}...`
       );
 
       // Log the event details
@@ -259,6 +350,24 @@ export function SwapTab() {
     savePoolToLocalStorage,
     nextPoolIdData,
   ]);
+
+  // Monitor pool creation errors
+  useEffect(() => {
+    if (createPoolError) {
+      console.error("❌ Pool creation failed:", createPoolError);
+      const errorMessage = createPoolError.message || "Unknown error occurred";
+
+      if (errorMessage.includes("INSUFFICIENT_GAS")) {
+        toast.error(
+          "❌ Pool creation failed: Insufficient gas. Please try again with higher gas limit."
+        );
+      } else if (errorMessage.includes("User rejected")) {
+        toast.error("❌ Pool creation cancelled by user.");
+      } else {
+        toast.error(`❌ Pool creation failed: ${errorMessage}`);
+      }
+    }
+  }, [createPoolError]);
 
   // Log token selection for debugging
   useEffect(() => {
@@ -362,7 +471,7 @@ export function SwapTab() {
   const { data: quoteData, error: quoteError } = useGetSwapQuote(
     poolId,
     fromTokenAddress as Address,
-    fromValue ? parseUnits(fromValue, 18) : BigInt(0)
+    debouncedFromValue ? parseUnits(debouncedFromValue, 18) : BigInt(0)
   );
 
   // Log quote data for debugging
@@ -372,10 +481,23 @@ export function SwapTab() {
       quoteDataType: typeof quoteData,
       quoteError,
       fromValue,
+      debouncedFromValue,
       poolIdUsed: poolId.toString(),
-      hasValidInputs: !!(fromTokenAddress && fromValue && poolId > BigInt(0)),
+      hasValidInputs: !!(
+        fromTokenAddress &&
+        debouncedFromValue &&
+        poolId > BigInt(0)
+      ),
       poolExists: poolId > BigInt(0),
-      shouldGetQuote: poolId > BigInt(0) && fromValue && fromTokenAddress,
+      shouldGetQuote: !!(
+        poolId > BigInt(0) &&
+        debouncedFromValue &&
+        fromTokenAddress
+      ),
+      fromValueExists: !!fromValue,
+      debouncedFromValueExists: !!debouncedFromValue,
+      fromTokenExists: !!fromTokenAddress,
+      poolIdValid: poolId > BigInt(0),
       errorDetails: quoteError
         ? {
             name: quoteError.name,
@@ -384,7 +506,14 @@ export function SwapTab() {
           }
         : null,
     });
-  }, [quoteData, quoteError, fromValue, poolId, fromTokenAddress]);
+  }, [
+    quoteData,
+    quoteError,
+    fromValue,
+    debouncedFromValue,
+    poolId,
+    fromTokenAddress,
+  ]);
 
   // Manual test to check if pools exist with hardcoded addresses
   useEffect(() => {
@@ -420,6 +549,18 @@ export function SwapTab() {
   // Use swap hook
   const { swap, isPending, isConfirming, isConfirmed, error, hash } = useSwap();
 
+  // Track previous isPending state to detect when processing stops
+  const [prevIsPending, setPrevIsPending] = useState(false);
+
+  // Show success toast immediately when swap processing stops
+  useEffect(() => {
+    if (prevIsPending && !isPending) {
+      // Swap processing has stopped (regardless of success or failure)
+      toast.success("Swap operation completed!");
+    }
+    setPrevIsPending(isPending);
+  }, [isPending, prevIsPending]);
+
   const handleSwapAssets = () => {
     const tempAsset = fromAsset;
     const tempValue = fromValue;
@@ -431,16 +572,25 @@ export function SwapTab() {
 
   // Update toValue when quote changes
   useEffect(() => {
-    if (quoteData && fromValue) {
+    if (quoteData && debouncedFromValue) {
       const quotedAmount = formatUnits(quoteData as bigint, 18);
       setToValue(quotedAmount);
-    } else if (fromValue && !quoteData) {
-      // If we have fromValue but no quote data, show estimated value
+    } else if (
+      debouncedFromValue &&
+      poolId > BigInt(0) &&
+      fromTokenAddress &&
+      !quoteData &&
+      !quoteError
+    ) {
+      // Only show "Calculating..." if we have valid inputs and no error
       setToValue("Calculating...");
+    } else if (quoteError && debouncedFromValue) {
+      // Show error state
+      setToValue("Error calculating quote");
     } else {
       setToValue("");
     }
-  }, [quoteData, fromValue]);
+  }, [quoteData, debouncedFromValue, poolId, fromTokenAddress, quoteError]);
 
   const getAssetDisplayName = (assetType: string | null) => {
     if (!assetType) return "Select Asset";
@@ -449,19 +599,16 @@ export function SwapTab() {
   };
 
   // Calculate if swap is possible
-  // Note: We don't require quoteData to be truthy since it might fail due to low liquidity
-  // but we still want to allow users to attempt the swap if tokens are supported
+  // Note: Allow swapping regardless of token support or pool existence
+  // Users can swap as long as they have tokens selected and amounts entered
   const bothTokensSupported = isFromTokenSupported && isToTokenSupported;
   const canSwap =
     fromValue &&
     fromTokenAddress &&
     toTokenAddress &&
     fromAsset !== toAsset &&
-    isConnected &&
-    poolId > BigInt(0) &&
-    bothTokensSupported;
+    isConnected;
   const canCreatePool =
-    fromValue &&
     fromTokenAddress &&
     toTokenAddress &&
     fromAsset !== toAsset &&
@@ -507,7 +654,6 @@ export function SwapTab() {
         isConnected,
         poolId: poolId.toString(),
       });
-      toast.error("Please connect wallet and select both tokens");
       return;
     }
 
@@ -539,14 +685,12 @@ export function SwapTab() {
       console.log("📞 Swap function called, result:", swapResult);
 
       console.log("✅ Swap transaction submitted!");
-      toast.success("Swap initiated successfully!");
     } catch (err) {
       console.error("❌ Swap failed:", err);
       console.error("Error details:", {
         message: (err as Error)?.message,
         stack: (err as Error)?.stack,
       });
-      toast.error(`Swap failed: ${(err as Error)?.message || "Unknown error"}`);
     }
   };
 
@@ -554,7 +698,6 @@ export function SwapTab() {
   useEffect(() => {
     if (isConfirmed) {
       console.log("✅ Swap transaction confirmed!");
-      toast.success("Swap completed successfully!");
       setFromValue("");
       setToValue("");
     }
@@ -563,7 +706,6 @@ export function SwapTab() {
   useEffect(() => {
     if (error) {
       console.error("❌ Swap hook error:", error);
-      toast.error(`Swap error: ${error.message}`);
     }
   }, [error]);
 
@@ -687,21 +829,112 @@ export function SwapTab() {
                       {getAssetDisplayName(toAsset)}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                    disabled={!canCreatePool || isCreatingPool}
-                    onClick={handleCreatePool}
+                  <Dialog
+                    open={isCreatePoolModalOpen}
+                    onOpenChange={setIsCreatePoolModalOpen}
                   >
-                    {isCreatingPool ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Pool"
-                    )}
-                  </Button>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        disabled={!canCreatePool || isCreatingPool}
+                      >
+                        {isCreatingPool ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          "Create Pool"
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Create Liquidity Pool</DialogTitle>
+                        <DialogDescription>
+                          Create a new liquidity pool for{" "}
+                          {getAssetDisplayName(fromAsset)} ↔{" "}
+                          {getAssetDisplayName(toAsset)}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="amountA" className="text-right">
+                            {getAssetDisplayName(fromAsset)} Amount
+                          </Label>
+                          <Input
+                            id="amountA"
+                            type="number"
+                            placeholder="0.0"
+                            value={poolAmountA}
+                            onChange={(e) => setPoolAmountA(e.target.value)}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="amountB" className="text-right">
+                            {getAssetDisplayName(toAsset)} Amount
+                          </Label>
+                          <Input
+                            id="amountB"
+                            type="number"
+                            placeholder="0.0"
+                            value={poolAmountB}
+                            onChange={(e) => setPoolAmountB(e.target.value)}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="feeRate" className="text-right">
+                            Fee Rate (bps)
+                          </Label>
+                          <Input
+                            id="feeRate"
+                            type="number"
+                            placeholder="300"
+                            value={poolFeeRate}
+                            onChange={(e) => setPoolFeeRate(e.target.value)}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="text-xs text-gray-400 mt-2">
+                          <p>• Fee rate is in basis points (300 = 3%)</p>
+                          <p>
+                            • You&apos;ll need to approve both token amounts
+                          </p>
+                          <p>• Pool creation requires gas fees</p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsCreatePoolModalOpen(false)}
+                          className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleCreatePool}
+                          disabled={
+                            !poolAmountA || !poolAmountB || isCreatingPool
+                          }
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                          {isCreatingPool ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            "Create Pool"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             ) : null}
@@ -736,21 +969,135 @@ export function SwapTab() {
                           )} needs to be added to the SwapEngine`}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-orange-500 hover:bg-orange-600 text-black"
-                    disabled={isAddingToken}
-                    onClick={handleAddSupportedTokens}
-                  >
-                    {isAddingToken ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      "Add Support"
-                    )}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-black"
+                      disabled={isAddingToken}
+                      onClick={handleAddSupportedTokens}
+                    >
+                      {isAddingToken ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add Support"
+                      )}
+                    </Button>
+                    <Dialog
+                      open={isCreatePoolModalOpen}
+                      onOpenChange={setIsCreatePoolModalOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          disabled={
+                            !fromTokenAddress ||
+                            !toTokenAddress ||
+                            fromAsset === toAsset ||
+                            !isConnected ||
+                            isCreatingPool
+                          }
+                        >
+                          {isCreatingPool ? (
+                            <>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            "Create Pool"
+                          )}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Create Liquidity Pool</DialogTitle>
+                          <DialogDescription>
+                            Create a new liquidity pool for{" "}
+                            {getAssetDisplayName(fromAsset)} ↔{" "}
+                            {getAssetDisplayName(toAsset)}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="amountA" className="text-right">
+                              {getAssetDisplayName(fromAsset)} Amount
+                            </Label>
+                            <Input
+                              id="amountA"
+                              type="number"
+                              placeholder="0.0"
+                              value={poolAmountA}
+                              onChange={(e) => setPoolAmountA(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="amountB" className="text-right">
+                              {getAssetDisplayName(toAsset)} Amount
+                            </Label>
+                            <Input
+                              id="amountB"
+                              type="number"
+                              placeholder="0.0"
+                              value={poolAmountB}
+                              onChange={(e) => setPoolAmountB(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="feeRate" className="text-right">
+                              Fee Rate (bps)
+                            </Label>
+                            <Input
+                              id="feeRate"
+                              type="number"
+                              placeholder="300"
+                              value={poolFeeRate}
+                              onChange={(e) => setPoolFeeRate(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="text-xs text-gray-400 mt-2">
+                            <p>• Fee rate is in basis points (300 = 3%)</p>
+                            <p>
+                              • You&apos;ll need to approve both token amounts
+                            </p>
+                            <p>• Pool creation requires gas fees</p>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsCreatePoolModalOpen(false)}
+                            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleCreatePool}
+                            disabled={
+                              !poolAmountA || !poolAmountB || isCreatingPool
+                            }
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                          >
+                            {isCreatingPool ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              "Create Pool"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </div>
             )}
@@ -774,12 +1121,6 @@ export function SwapTab() {
                 </>
               ) : !isConnected ? (
                 "Connect Wallet"
-              ) : needsTokenSupport ? (
-                "Add Token Support First"
-              ) : poolId === BigInt(0) && bothTokensSupported ? (
-                "Create Pool First"
-              ) : poolId === BigInt(0) ? (
-                "No Pool Available"
               ) : !fromValue ? (
                 "Enter Amount"
               ) : !fromAsset || !toAsset ? (

@@ -3,10 +3,14 @@
  * Custom hooks for interacting with the SwapEngine smart contract
  */
 
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Address } from 'viem';
-import { CONTRACT_ADDRESSES, HEDERA_TESTNET_CHAIN_ID } from '@/lib/contracts';
-import SwapEngineABI from '@/lib/abis/SwapEngine.json';
+import {
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { Address } from "viem";
+import { CONTRACT_ADDRESSES, HEDERA_TESTNET_CHAIN_ID } from "@/lib/contracts";
+import SwapEngineABI from "@/lib/abis/SwapEngine.json";
 
 // Types based on SwapEngine contract
 export interface LiquidityPool {
@@ -61,7 +65,7 @@ export const useGetPool = (poolId: bigint) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getPool',
+    functionName: "getPool",
     args: [poolId],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -71,7 +75,7 @@ export const useGetPoolByTokens = (tokenA: Address, tokenB: Address) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getPoolByTokens',
+    functionName: "getPoolByTokens",
     args: [tokenA, tokenB],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -81,7 +85,7 @@ export const useGetPoolPositions = (poolId: bigint) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getPoolPositions',
+    functionName: "getPoolPositions",
     args: [poolId],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -91,7 +95,7 @@ export const useGetUserPositions = (user: Address) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getUserPositions',
+    functionName: "getUserPositions",
     args: [user],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -101,19 +105,26 @@ export const useGetPoolStats = (poolId: bigint) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getPoolStats',
+    functionName: "getPoolStats",
     args: [poolId],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
 
-export const useGetSwapQuote = (poolId: bigint, tokenIn: Address, amountIn: bigint) => {
+export const useGetSwapQuote = (
+  poolId: bigint,
+  tokenIn: Address,
+  amountIn: bigint
+) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getSwapQuote',
+    functionName: "getSwapQuote",
     args: [poolId, tokenIn, amountIn],
     chainId: HEDERA_TESTNET_CHAIN_ID,
+    query: {
+      enabled: poolId > BigInt(0) && tokenIn && amountIn > BigInt(0),
+    },
   });
 };
 
@@ -121,7 +132,7 @@ export const useIsPaused = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'paused',
+    functionName: "paused",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -130,7 +141,7 @@ export const useGetHedVaultCore = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'hedVaultCore',
+    functionName: "hedVaultCore",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -139,7 +150,7 @@ export const useGetPriceOracle = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'priceOracle',
+    functionName: "priceOracle",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -148,7 +159,7 @@ export const useGetFeeRecipient = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'feeRecipient',
+    functionName: "feeRecipient",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -157,7 +168,7 @@ export const useGetDefaultFeeRate = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'defaultFeeRate',
+    functionName: "defaultFeeRate",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -166,7 +177,7 @@ export const useGetProtocolFeeShare = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'protocolFeeShare',
+    functionName: "protocolFeeShare",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -175,7 +186,7 @@ export const useGetTotalProtocolFees = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'totalProtocolFees',
+    functionName: "totalProtocolFees",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -184,7 +195,7 @@ export const useGetNextPoolId = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'nextPoolId',
+    functionName: "nextPoolId",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -193,7 +204,7 @@ export const useGetNextSwapId = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'nextSwapId',
+    functionName: "nextSwapId",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -202,7 +213,7 @@ export const useGetTotalPools = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'totalPools',
+    functionName: "totalPools",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -211,7 +222,7 @@ export const useIsSupportedToken = (token: Address) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'supportedTokens',
+    functionName: "supportedTokens",
     args: [token],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -222,7 +233,7 @@ export const useSwapAdminRole = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'SWAP_ADMIN_ROLE',
+    functionName: "SWAP_ADMIN_ROLE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -231,7 +242,7 @@ export const useLiquidityManagerRole = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'LIQUIDITY_MANAGER_ROLE',
+    functionName: "LIQUIDITY_MANAGER_ROLE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -240,7 +251,7 @@ export const useFeeManagerRole = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'FEE_MANAGER_ROLE',
+    functionName: "FEE_MANAGER_ROLE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -249,7 +260,7 @@ export const useEmergencyRole = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'EMERGENCY_ROLE',
+    functionName: "EMERGENCY_ROLE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -258,7 +269,7 @@ export const useDefaultAdminRole = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'DEFAULT_ADMIN_ROLE',
+    functionName: "DEFAULT_ADMIN_ROLE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -267,7 +278,7 @@ export const useMinLiquidity = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'MIN_LIQUIDITY',
+    functionName: "MIN_LIQUIDITY",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -276,7 +287,7 @@ export const useMaxFeeRate = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'MAX_FEE_RATE',
+    functionName: "MAX_FEE_RATE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -285,7 +296,7 @@ export const useMaxSlippage = () => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'MAX_SLIPPAGE',
+    functionName: "MAX_SLIPPAGE",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 };
@@ -293,20 +304,28 @@ export const useMaxSlippage = () => {
 // Write Hooks
 export const useCreatePool = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
-  const createPool = (tokenA: Address, tokenB: Address, amountA: bigint, amountB: bigint, feeRate: bigint) => {
+
+  const createPool = (
+    tokenA: Address,
+    tokenB: Address,
+    amountA: bigint,
+    amountB: bigint,
+    feeRate: bigint
+  ) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'createPool',
+      functionName: "createPool",
       args: [tokenA, tokenB, amountA, amountB, feeRate],
       chainId: HEDERA_TESTNET_CHAIN_ID,
+      gas: BigInt(10000000), // Set high gas limit to prevent INSUFFICIENT_GAS errors
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     createPool,
@@ -320,20 +339,26 @@ export const useCreatePool = () => {
 
 export const useAddLiquidity = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
-  const addLiquidity = (poolId: bigint, amountA: bigint, amountB: bigint, minLiquidity: bigint) => {
+
+  const addLiquidity = (
+    poolId: bigint,
+    amountA: bigint,
+    amountB: bigint,
+    minLiquidity: bigint
+  ) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'addLiquidity',
+      functionName: "addLiquidity",
       args: [poolId, amountA, amountB, minLiquidity],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     addLiquidity,
@@ -347,20 +372,27 @@ export const useAddLiquidity = () => {
 
 export const useRemoveLiquidity = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
-  const removeLiquidity = (poolId: bigint, positionIndex: bigint, liquidity: bigint, minAmountA: bigint, minAmountB: bigint) => {
+
+  const removeLiquidity = (
+    poolId: bigint,
+    positionIndex: bigint,
+    liquidity: bigint,
+    minAmountA: bigint,
+    minAmountB: bigint
+  ) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'removeLiquidity',
+      functionName: "removeLiquidity",
       args: [poolId, positionIndex, liquidity, minAmountA, minAmountB],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     removeLiquidity,
@@ -374,20 +406,27 @@ export const useRemoveLiquidity = () => {
 
 export const useSwap = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
-  const swap = (poolId: bigint, tokenIn: Address, amountIn: bigint, minAmountOut: bigint, maxSlippage: bigint) => {
+
+  const swap = (
+    poolId: bigint,
+    tokenIn: Address,
+    amountIn: bigint,
+    minAmountOut: bigint,
+    maxSlippage: bigint
+  ) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'swap',
+      functionName: "swap",
       args: [poolId, tokenIn, amountIn, minAmountOut, maxSlippage],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     swap,
@@ -401,20 +440,21 @@ export const useSwap = () => {
 
 export const useAddSupportedToken = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const addSupportedToken = (token: Address) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'addSupportedToken',
+      functionName: "addSupportedToken",
       args: [token],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     addSupportedToken,
@@ -428,20 +468,21 @@ export const useAddSupportedToken = () => {
 
 export const useUpdatePoolFeeRate = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const updatePoolFeeRate = (poolId: bigint, newFeeRate: bigint) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'updatePoolFeeRate',
+      functionName: "updatePoolFeeRate",
       args: [poolId, newFeeRate],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     updatePoolFeeRate,
@@ -455,19 +496,20 @@ export const useUpdatePoolFeeRate = () => {
 
 export const usePause = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const pause = () => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'pause',
+      functionName: "pause",
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     pause,
@@ -481,19 +523,20 @@ export const usePause = () => {
 
 export const useUnpause = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const unpause = () => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'unpause',
+      functionName: "unpause",
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     unpause,
@@ -508,20 +551,21 @@ export const useUnpause = () => {
 // Role Management Hooks
 export const useGrantRole = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const grantRole = (role: string, account: Address) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'grantRole',
+      functionName: "grantRole",
       args: [role, account],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     grantRole,
@@ -535,20 +579,21 @@ export const useGrantRole = () => {
 
 export const useRevokeRole = () => {
   const { writeContract, data: hash, error, isPending } = useWriteContract();
-  
+
   const revokeRole = (role: string, account: Address) => {
     writeContract({
       address: CONTRACT_ADDRESSES.SwapEngine,
       abi: SwapEngineABI,
-      functionName: 'revokeRole',
+      functionName: "revokeRole",
       args: [role, account],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     revokeRole,
@@ -564,7 +609,7 @@ export const useHasRole = (role: string, account: Address) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'hasRole',
+    functionName: "hasRole",
     args: [role, account],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
@@ -574,7 +619,7 @@ export const useGetRoleAdmin = (role: string) => {
   return useReadContract({
     address: CONTRACT_ADDRESSES.SwapEngine,
     abi: SwapEngineABI,
-    functionName: 'getRoleAdmin',
+    functionName: "getRoleAdmin",
     args: [role],
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });

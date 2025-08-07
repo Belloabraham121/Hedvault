@@ -3,9 +3,9 @@
  * Custom hooks for interacting with the LendingPool smart contract
  */
 
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { Address } from 'viem';
-import { LendingPoolABI } from '../../lib/abis';
+import { LendingPoolABI, ERC20ABI } from '../../lib/abis';
 import { CONTRACT_ADDRESSES, HEDERA_TESTNET_CHAIN_ID } from '../../lib/contracts';
 
 // Types
@@ -187,6 +187,76 @@ export function useGetNextLoanId() {
   });
 }
 
+export function useGetTotalDeposits(token?: Address) {
+  const poolInfo = useGetPoolInfo(token);
+  return {
+    data: poolInfo.data?.totalDeposits,
+    isLoading: poolInfo.isLoading,
+    error: poolInfo.error,
+  };
+}
+
+// Token Approval Hooks
+export function useTokenAllowance(tokenAddress?: Address, spenderAddress?: Address) {
+  const { address: userAddress } = useAccount();
+  
+  return useReadContract({
+    address: tokenAddress,
+    abi: ERC20ABI,
+    functionName: 'allowance',
+    args: userAddress && spenderAddress ? [userAddress, spenderAddress] : undefined,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
+    query: {
+      enabled: !!tokenAddress && !!spenderAddress && !!userAddress,
+    },
+  }) as { data: bigint | undefined; isLoading: boolean; error: Error | null };
+}
+
+export function useTokenApproval(tokenAddress?: Address) {
+  const { writeContract, data: hash, error, isPending } = useWriteContract();
+
+  const approve = (spenderAddress: Address, amount: bigint) => {
+    if (!tokenAddress) return;
+    
+    writeContract({
+      address: tokenAddress,
+      abi: ERC20ABI,
+      functionName: 'approve',
+      args: [spenderAddress, amount],
+      chainId: HEDERA_TESTNET_CHAIN_ID,
+    });
+  };
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
+  });
+
+  return {
+    approve,
+    hash,
+    error,
+    isPending,
+    isConfirming,
+    isConfirmed,
+  };
+}
+
+export function useTokenBalance(tokenAddress?: Address) {
+  const { address: userAddress } = useAccount();
+  
+  return useReadContract({
+    address: tokenAddress,
+    abi: ERC20ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress] : undefined,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
+    query: {
+      enabled: !!tokenAddress && !!userAddress,
+    },
+  }) as { data: bigint | undefined; isLoading: boolean; error: Error | null };
+}
+
 // Read Hooks - Protocol State
 export function useIsPaused() {
   return useReadContract({
@@ -240,6 +310,7 @@ export function useDeposit() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -267,6 +338,7 @@ export function useWithdraw() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -294,6 +366,7 @@ export function useCreateLoan() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -321,6 +394,7 @@ export function useRepayLoan() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -348,6 +422,7 @@ export function useLiquidateLoan() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -376,6 +451,7 @@ export function useAddSupportedToken() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -403,6 +479,7 @@ export function useUpdateFeeRecipient() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {
@@ -429,6 +506,7 @@ export function usePause() {
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   return {

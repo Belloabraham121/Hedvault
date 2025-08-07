@@ -3,10 +3,17 @@
  * Custom hooks for interacting with the HedVaultCore smart contract
  */
 
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Address } from 'viem';
-import { HedVaultCoreABI } from '../../lib/abis';
-import { CONTRACT_ADDRESSES, HEDERA_TESTNET_CHAIN_ID } from '../../lib/contracts';
+import {
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { Address } from "viem";
+import { HedVaultCoreABI } from "../../lib/abis";
+import {
+  CONTRACT_ADDRESSES,
+  HEDERA_TESTNET_CHAIN_ID,
+} from "../../lib/contracts";
 
 // Types
 export interface ProtocolHealth {
@@ -44,7 +51,7 @@ export function useGetFeeRecipient() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'feeRecipient',
+    functionName: "feeRecipient",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -53,7 +60,7 @@ export function useGetMarketplace() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'marketplace',
+    functionName: "marketplace",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -62,7 +69,7 @@ export function useGetLendingPool() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'lendingPool',
+    functionName: "lendingPool",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -71,7 +78,7 @@ export function useGetPriceOracle() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'priceOracle',
+    functionName: "priceOracle",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -80,7 +87,7 @@ export function useGetComplianceManager() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'complianceManager',
+    functionName: "complianceManager",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -89,7 +96,7 @@ export function useGetPortfolioManager() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'portfolioManager',
+    functionName: "portfolioManager",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -98,7 +105,7 @@ export function useGetRewardsDistributor() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'rewardsDistributor',
+    functionName: "rewardsDistributor",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -107,7 +114,7 @@ export function useGetSwapEngine() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'swapEngine',
+    functionName: "swapEngine",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -116,7 +123,7 @@ export function useGetAnalyticsEngine() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'analyticsEngine',
+    functionName: "analyticsEngine",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -125,7 +132,7 @@ export function useGetCrossChainBridge() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'crossChainBridge',
+    functionName: "crossChainBridge",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -134,7 +141,7 @@ export function useGetRwaTokenFactory() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'rwaTokenFactory',
+    functionName: "rwaTokenFactory",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -144,7 +151,7 @@ export function useIsPaused() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'paused',
+    functionName: "paused",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -153,7 +160,7 @@ export function useIsInitialized() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'isInitialized',
+    functionName: "isInitialized",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -162,7 +169,7 @@ export function useIsEmergencyMode() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'emergencyMode',
+    functionName: "emergencyMode",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -171,7 +178,7 @@ export function useGetOwner() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'owner',
+    functionName: "owner",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 }
@@ -181,28 +188,28 @@ export function useGetProtocolConstants() {
   const { data: version } = useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'VERSION',
+    functionName: "VERSION",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   const { data: dailyTransactionLimit } = useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'DAILY_TRANSACTION_LIMIT',
+    functionName: "DAILY_TRANSACTION_LIMIT",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   const { data: dailyVolumeLimit } = useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'DAILY_VOLUME_LIMIT',
+    functionName: "DAILY_VOLUME_LIMIT",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
   const { data: rateLimitWindow } = useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'RATE_LIMIT_WINDOW',
+    functionName: "RATE_LIMIT_WINDOW",
     chainId: HEDERA_TESTNET_CHAIN_ID,
   });
 
@@ -219,7 +226,7 @@ export function useGetProtocolFee(operation?: string) {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'getProtocolFee',
+    functionName: "getProtocolFee",
     args: operation ? [operation] : undefined,
     chainId: HEDERA_TESTNET_CHAIN_ID,
     query: {
@@ -232,34 +239,46 @@ export function useGetProtocolHealth() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'getProtocolHealth',
+    functionName: "getProtocolHealth",
     chainId: HEDERA_TESTNET_CHAIN_ID,
-  }) as { data: ProtocolHealth | undefined; isLoading: boolean; error: Error | null };
+  }) as {
+    data: ProtocolHealth | undefined;
+    isLoading: boolean;
+    error: Error | null;
+  };
 }
 
 export function useGetProtocolLimits() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'getProtocolLimits',
+    functionName: "getProtocolLimits",
     chainId: HEDERA_TESTNET_CHAIN_ID,
-  }) as { data: ProtocolLimits | undefined; isLoading: boolean; error: Error | null };
+  }) as {
+    data: ProtocolLimits | undefined;
+    isLoading: boolean;
+    error: Error | null;
+  };
 }
 
 export function useGetProtocolStats() {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'getProtocolStats',
+    functionName: "getProtocolStats",
     chainId: HEDERA_TESTNET_CHAIN_ID,
-  }) as { data: ProtocolStats | undefined; isLoading: boolean; error: Error | null };
+  }) as {
+    data: ProtocolStats | undefined;
+    isLoading: boolean;
+    error: Error | null;
+  };
 }
 
 export function useGetUserInfo(user?: Address) {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'getUserInfo',
+    functionName: "getUserInfo",
     args: user ? [user] : undefined,
     chainId: HEDERA_TESTNET_CHAIN_ID,
     query: {
@@ -268,11 +287,15 @@ export function useGetUserInfo(user?: Address) {
   }) as { data: UserInfo | undefined; isLoading: boolean; error: Error | null };
 }
 
-export function useValidateTransaction(user?: Address, amount?: bigint, operation?: string) {
+export function useValidateTransaction(
+  user?: Address,
+  amount?: bigint,
+  operation?: string
+) {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'validateTransaction',
+    functionName: "validateTransaction",
     args: user && amount && operation ? [user, amount, operation] : undefined,
     chainId: HEDERA_TESTNET_CHAIN_ID,
     query: {
@@ -285,7 +308,7 @@ export function useIsValidModule(module?: Address) {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'isValidModule',
+    functionName: "isValidModule",
     args: module ? [module] : undefined,
     chainId: HEDERA_TESTNET_CHAIN_ID,
     query: {
@@ -298,7 +321,7 @@ export function useIsCircuitBreakerActive(module?: string) {
   return useReadContract({
     address: CONTRACT_ADDRESSES.HedVaultCore,
     abi: HedVaultCoreABI,
-    functionName: 'isCircuitBreakerActive',
+    functionName: "isCircuitBreakerActive",
     args: module ? [module] : undefined,
     chainId: HEDERA_TESTNET_CHAIN_ID,
     query: {
@@ -315,15 +338,16 @@ export function useUpdateModule() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'updateModule',
+      functionName: "updateModule",
       args: [moduleType, newModule],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     updateModule,
@@ -342,15 +366,16 @@ export function useUpdateFee() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'updateFee',
+      functionName: "updateFee",
       args: [feeType, newFee],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     updateFee,
@@ -369,15 +394,16 @@ export function useBatchUpdateFees() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'batchUpdateFees',
+      functionName: "batchUpdateFees",
       args: [feeTypes, newFees],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     batchUpdateFees,
@@ -396,15 +422,16 @@ export function useUpdateFeeRecipient() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'updateFeeRecipient',
+      functionName: "updateFeeRecipient",
       args: [newFeeRecipient],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     updateFeeRecipient,
@@ -423,15 +450,16 @@ export function useUpdateProtocolLimit() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'updateProtocolLimit',
+      functionName: "updateProtocolLimit",
       args: [limitType, newLimit],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     updateProtocolLimit,
@@ -451,14 +479,15 @@ export function usePauseContract() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'pause',
+      functionName: "pause",
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     pauseContract,
@@ -477,14 +506,15 @@ export function useUnpauseContract() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'unpause',
+      functionName: "unpause",
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     unpauseContract,
@@ -503,15 +533,16 @@ export function useActivateEmergencyMode() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'activateEmergencyMode',
+      functionName: "activateEmergencyMode",
       args: [reason],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     activateEmergencyMode,
@@ -530,14 +561,15 @@ export function useDeactivateEmergencyMode() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'deactivateEmergencyMode',
+      functionName: "deactivateEmergencyMode",
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     deactivateEmergencyMode,
@@ -556,15 +588,16 @@ export function useRegisterUser() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'registerUser',
+      functionName: "registerUser",
       args: [user],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     registerUser,
@@ -583,15 +616,16 @@ export function useAddAdmin() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'addAdmin',
+      functionName: "addAdmin",
       args: [admin],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     addAdmin,
@@ -610,15 +644,16 @@ export function useRemoveAdmin() {
     writeContract({
       address: CONTRACT_ADDRESSES.HedVaultCore,
       abi: HedVaultCoreABI,
-      functionName: 'removeAdmin',
+      functionName: "removeAdmin",
       args: [admin],
       chainId: HEDERA_TESTNET_CHAIN_ID,
     });
   };
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
 
   return {
     removeAdmin,

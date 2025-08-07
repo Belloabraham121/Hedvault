@@ -19,7 +19,7 @@ export const CONTRACT_ADDRESSES = {
   RewardsDistributor: "0x9e1fe9f241142ab56804fcd69596812099873a2e" as Address,
   RWAOffchainOracle: "0x526f1fd7e5e6220c8390c14fcb0b5a1c83d36e8d" as Address,
   RWATokenFactory: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9" as Address,
-  SwapEngine: "0x4536b242ea3d3b5c412f5db159353b7ca6ed003e" as Address,
+  SwapEngine: "0x12354dc2fe41577989c4c82f68ac4d4f34d3572e" as Address,
 } as const;
 
 // Contract Names for easy reference
