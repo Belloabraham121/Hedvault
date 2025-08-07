@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeftRight, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,8 @@ import {
   useAddSupportedToken,
   useCreatePool,
 } from "@/hooks/useSwapEngine";
+import { useTokenApproval, useTokenAllowance } from "@/hooks/contracts/useLendingPool";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts";
 import { parseUnits, formatUnits, Address } from "viem";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
@@ -43,7 +45,7 @@ export function SwapTab() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedFromValue(fromValue);
-    }, 500); // 500ms debounce
+    }, 2000); // 2000ms debounce (2 seconds)
 
     return () => clearTimeout(timer);
   }, [fromValue]);
@@ -549,6 +551,31 @@ export function SwapTab() {
   // Use swap hook
   const { swap, isPending, isConfirming, isConfirmed, error, hash } = useSwap();
 
+  // Token approval hooks
+  const tokenApproval = useTokenApproval(fromTokenAddress as Address);
+  const tokenAllowance = useTokenAllowance(
+    fromTokenAddress as Address,
+    CONTRACT_ADDRESSES.SwapEngine
+  );
+
+  // Debug logging for token approval hooks
+  useEffect(() => {
+    console.log("🔍 Token approval hook state:", {
+      fromTokenAddress,
+      swapEngineAddress: CONTRACT_ADDRESSES.SwapEngine,
+      tokenAllowance: tokenAllowance.data?.toString(),
+      tokenApprovalPending: tokenApproval.isPending,
+      tokenApprovalConfirmed: tokenApproval.isConfirmed,
+      tokenApprovalError: tokenApproval.error?.message,
+      hasApproveFunction: typeof tokenApproval.approve === 'function',
+      approveFunction: tokenApproval.approve,
+    });
+  }, [fromTokenAddress, tokenAllowance.data, tokenApproval.isPending, tokenApproval.isConfirmed, tokenApproval.error, tokenApproval.approve]);
+
+  // Approval state
+  const [isApprovalInProgress, setIsApprovalInProgress] = useState(false);
+  const [pendingSwapAmount, setPendingSwapAmount] = useState("");
+
   // Track previous isPending state to detect when processing stops
   const [prevIsPending, setPrevIsPending] = useState(false);
 
@@ -572,25 +599,13 @@ export function SwapTab() {
 
   // Update toValue when quote changes
   useEffect(() => {
-    if (quoteData && debouncedFromValue) {
-      const quotedAmount = formatUnits(quoteData as bigint, 18);
-      setToValue(quotedAmount);
-    } else if (
-      debouncedFromValue &&
-      poolId > BigInt(0) &&
-      fromTokenAddress &&
-      !quoteData &&
-      !quoteError
-    ) {
-      // Only show "Calculating..." if we have valid inputs and no error
-      setToValue("Calculating...");
-    } else if (quoteError && debouncedFromValue) {
-      // Show error state
-      setToValue("Error calculating quote");
+    if (debouncedFromValue) {
+      // Set toValue equal to fromValue after 2-second delay (1:1 ratio)
+      setToValue(debouncedFromValue);
     } else {
       setToValue("");
     }
-  }, [quoteData, debouncedFromValue, poolId, fromTokenAddress, quoteError]);
+  }, [debouncedFromValue]);
 
   const getAssetDisplayName = (assetType: string | null) => {
     if (!assetType) return "Select Asset";
@@ -633,33 +648,29 @@ export function SwapTab() {
     });
   }, [isPending, isConfirming, isConfirmed, error, hash]);
 
-  // Handle swap execution
-  const handleSwap = async () => {
-    console.log("🔄 Swap button clicked!");
-    console.log("📊 Swap state:", {
-      fromToken: fromToken?.symbol,
-      toToken: toToken?.symbol,
-      fromValue,
-      poolData,
-      isConnected,
-      poolId: poolId.toString(),
-      canSwap,
-    });
-
-    if (!fromTokenAddress || !toTokenAddress || !fromValue || !isConnected) {
-      console.log("❌ Swap validation failed:", {
-        hasFromTokenAddress: !!fromTokenAddress,
-        hasToTokenAddress: !!toTokenAddress,
-        hasFromValue: !!fromValue,
-        isConnected,
-        poolId: poolId.toString(),
-      });
-      return;
+  // Handle token approval success/error and auto-trigger swap
+  useEffect(() => {
+    if (tokenApproval.isConfirmed && isApprovalInProgress) {
+      toast.success("Token approval successful! Executing swap...");
+      setIsApprovalInProgress(false);
+      // Auto-trigger swap after successful approval
+      if (pendingSwapAmount) {
+        executeSwap(pendingSwapAmount);
+        setPendingSwapAmount("");
+      }
     }
+    if (tokenApproval.error && isApprovalInProgress) {
+      toast.error(`Token approval failed: ${tokenApproval.error.message}`);
+      setIsApprovalInProgress(false);
+      setPendingSwapAmount("");
+    }
+  }, [tokenApproval.isConfirmed, tokenApproval.error, isApprovalInProgress, pendingSwapAmount]);
 
+  // Execute swap function
+  const executeSwap = async (swapAmount: string) => {
     try {
       console.log("🚀 Starting swap execution...");
-      const amountIn = parseUnits(fromValue, 18);
+      const amountIn = parseUnits(swapAmount, 18);
       // Use quote data if available, otherwise set minAmountOut to 0 (user accepts any amount)
       const minAmountOut = quoteData
         ? ((quoteData as bigint) * BigInt(95)) / BigInt(100)
@@ -691,6 +702,85 @@ export function SwapTab() {
         message: (err as Error)?.message,
         stack: (err as Error)?.stack,
       });
+    }
+  };
+
+  // Handle swap execution
+  const handleSwap = async () => {
+    console.log("🔄 Swap button clicked!");
+    console.log("📊 Swap state:", {
+      fromToken: fromToken?.symbol,
+      toToken: toToken?.symbol,
+      fromValue,
+      poolData,
+      isConnected,
+      poolId: poolId.toString(),
+      canSwap,
+    });
+
+    if (!fromTokenAddress || !toTokenAddress || !fromValue || !isConnected) {
+      console.log("❌ Swap validation failed:", {
+        hasFromTokenAddress: !!fromTokenAddress,
+        hasToTokenAddress: !!toTokenAddress,
+        hasFromValue: !!fromValue,
+        isConnected,
+        poolId: poolId.toString(),
+      });
+      return;
+    }
+
+    try {
+      const amountIn = parseUnits(fromValue, 18);
+      const currentAllowance = tokenAllowance.data || BigInt(0);
+
+      console.log("🔍 Approval check:", {
+        currentAllowance: currentAllowance.toString(),
+        requiredAmount: amountIn.toString(),
+        needsApproval: currentAllowance < amountIn,
+        tokenAddress: fromTokenAddress,
+        spenderAddress: CONTRACT_ADDRESSES.SwapEngine
+      });
+
+      // Check if approval is needed
+      if (currentAllowance < amountIn) {
+        console.log("🔐 Token approval needed - triggering approval popup");
+        
+        // Validate that we have the approve function and wallet is connected
+        if (!isConnected) {
+          toast.error("Please connect your wallet first");
+          return;
+        }
+        
+        if (typeof tokenApproval.approve !== 'function') {
+          console.error("❌ tokenApproval.approve is not a function:", tokenApproval.approve);
+          toast.error("Token approval function is not available");
+          return;
+        }
+        
+        console.log("📞 Initiating token approval...");
+        console.log("Approval parameters:", {
+          spender: CONTRACT_ADDRESSES.SwapEngine,
+          amount: amountIn.toString(),
+          tokenAddress: fromTokenAddress
+        });
+        
+        setIsApprovalInProgress(true);
+        setPendingSwapAmount(fromValue);
+        
+        // Request approval for the swap amount (following blend-tab pattern)
+        tokenApproval.approve(CONTRACT_ADDRESSES.SwapEngine, amountIn);
+        toast.info("Please sign the token approval transaction in your wallet.");
+      } else {
+        console.log("✅ Token already approved, executing swap directly");
+        executeSwap(fromValue);
+      }
+    } catch (err) {
+      console.error("❌ Swap preparation failed:", err);
+      console.error("Error details:", {
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      toast.error(`Failed to prepare swap transaction: ${(err as Error)?.message}`);
     }
   };
 
@@ -1111,7 +1201,22 @@ export function SwapTab() {
               disabled={!canSwap || isLoading}
               onClick={() => {
                 console.log("🖱️ Execute Swap button clicked!");
-                handleSwap();
+                console.log("🔍 Button state check:", {
+                  canSwap,
+                  isLoading,
+                  fromValue,
+                  fromAsset,
+                  toAsset,
+                  fromTokenAddress,
+                  toTokenAddress,
+                  isConnected,
+                  buttonDisabled: !canSwap || isLoading
+                });
+                if (canSwap && !isLoading) {
+                  handleSwap();
+                } else {
+                  console.log("❌ Button click ignored - conditions not met");
+                }
               }}
             >
               {isLoading ? (

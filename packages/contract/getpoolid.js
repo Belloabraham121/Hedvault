@@ -7,7 +7,7 @@ const RWA_TOKEN_ADDRESSES = {
 };
 
 // SwapEngine contract address from latest deployment
-const SWAP_ENGINE_ADDRESS = "0x4536B242ea3D3b5C412F5dB159353B7ca6ed003E";
+const SWAP_ENGINE_ADDRESS = "0x12354dc2fe41577989c4c82f68ac4d4f34d3572e";
 
 // Anvil local network configuration
 const RPC_URL = "https://testnet.hashio.io/api";

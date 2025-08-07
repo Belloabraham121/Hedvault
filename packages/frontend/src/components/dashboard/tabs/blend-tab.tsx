@@ -35,7 +35,9 @@ export function BlendTab() {
   const [borrowAmount, setBorrowAmount] = useState("");
   const [collateralAmount, setCollateralAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
-  const [selectedToken, setSelectedToken] = useState<Address>(RWA_TOKEN_ADDRESSES.GOLD);
+  const [selectedToken, setSelectedToken] = useState<Address>(
+    RWA_TOKEN_ADDRESSES.GOLD
+  );
   const [selectedCollateralToken, setSelectedCollateralToken] =
     useState<Address>(RWA_TOKEN_ADDRESSES.REAL_ESTATE);
   const [selectedBorrowToken, setSelectedBorrowToken] = useState<Address>(
@@ -43,7 +45,8 @@ export function BlendTab() {
   );
   const [selectedLoanId, setSelectedLoanId] = useState("");
   const [isApprovalInProgress, setIsApprovalInProgress] = useState(false);
-  const [isCollateralApprovalInProgress, setIsCollateralApprovalInProgress] = useState(false);
+  const [isCollateralApprovalInProgress, setIsCollateralApprovalInProgress] =
+    useState(false);
   const [totalLentAmount, setTotalLentAmount] = useState(0);
   const [goldLentAmount, setGoldLentAmount] = useState(0);
   const [realEstateLentAmount, setRealEstateLentAmount] = useState(0);
@@ -55,106 +58,159 @@ export function BlendTab() {
 
   // Local storage functions for tracking individual token amounts
   const getTokenLentFromStorage = (tokenType: string): number => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const stored = localStorage.getItem(`hedvault_${tokenType}_lent`);
       return stored ? parseFloat(stored) : 0;
     }
     return 0;
   };
 
-  const updateTokenLentInStorage = (tokenType: string, amount: number): void => {
-    if (typeof window !== 'undefined') {
+  const updateTokenLentInStorage = (
+    tokenType: string,
+    amount: number
+  ): void => {
+    if (typeof window !== "undefined") {
       localStorage.setItem(`hedvault_${tokenType}_lent`, amount.toString());
       console.log(`Updated ${tokenType} lent in storage:`, amount);
-      
+
       // Update state based on token type
-      if (tokenType === 'gold') setGoldLentAmount(amount);
-      else if (tokenType === 'real_estate') setRealEstateLentAmount(amount);
-      else if (tokenType === 'invoice') setInvoiceLentAmount(amount);
-      
+      if (tokenType === "gold") setGoldLentAmount(amount);
+      else if (tokenType === "real_estate") setRealEstateLentAmount(amount);
+      else if (tokenType === "invoice") setInvoiceLentAmount(amount);
+
       // Recalculate total
       updateTotalFromIndividualAmounts();
     }
   };
 
   const updateTotalFromIndividualAmounts = (): void => {
-    const gold = getTokenLentFromStorage('gold');
-    const realEstate = getTokenLentFromStorage('real_estate');
-    const invoice = getTokenLentFromStorage('invoice');
+    const gold = getTokenLentFromStorage("gold");
+    const realEstate = getTokenLentFromStorage("real_estate");
+    const invoice = getTokenLentFromStorage("invoice");
     const total = gold + realEstate + invoice;
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('hedvault_total_lent', total.toString());
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hedvault_total_lent", total.toString());
       setTotalLentAmount(total);
-      console.log('Updated total lent from individual amounts:', total);
+      console.log("Updated total lent from individual amounts:", total);
     }
   };
 
-  const addToTokenLent = (tokenAddress: Address, depositAmount: number): void => {
-    console.log('addToTokenLent called with token:', tokenAddress, 'amount:', depositAmount);
-    let tokenType = '';
-    if (tokenAddress === RWA_TOKEN_ADDRESSES.GOLD) tokenType = 'gold';
-    else if (tokenAddress === RWA_TOKEN_ADDRESSES.REAL_ESTATE) tokenType = 'real_estate';
-    else if (tokenAddress === RWA_TOKEN_ADDRESSES.SILVER) tokenType = 'invoice'; // Silver mapped to Invoice for UI
-    
-    console.log('Mapped token type:', tokenType);
-    
+  const addToTokenLent = (
+    tokenAddress: Address,
+    depositAmount: number
+  ): void => {
+    console.log(
+      "addToTokenLent called with token:",
+      tokenAddress,
+      "amount:",
+      depositAmount
+    );
+    let tokenType = "";
+    if (tokenAddress === RWA_TOKEN_ADDRESSES.GOLD) tokenType = "gold";
+    else if (tokenAddress === RWA_TOKEN_ADDRESSES.REAL_ESTATE)
+      tokenType = "real_estate";
+    else if (tokenAddress === RWA_TOKEN_ADDRESSES.SILVER) tokenType = "invoice"; // Silver mapped to Invoice for UI
+
+    console.log("Mapped token type:", tokenType);
+
     if (tokenType) {
       const currentAmount = getTokenLentFromStorage(tokenType);
       const newAmount = currentAmount + depositAmount;
-      console.log(`addToTokenLent called for ${tokenType} with:`, depositAmount);
+      console.log(
+        `addToTokenLent called for ${tokenType} with:`,
+        depositAmount
+      );
       console.log(`Current ${tokenType} amount:`, currentAmount);
       console.log(`New ${tokenType} amount will be:`, newAmount);
       updateTokenLentInStorage(tokenType, newAmount);
-      
+
       // Update React state to trigger UI re-render
-      if (tokenType === 'gold') {
-        console.log('Updating gold lent amount from', goldLentAmount, 'to', newAmount);
+      if (tokenType === "gold") {
+        console.log(
+          "Updating gold lent amount from",
+          goldLentAmount,
+          "to",
+          newAmount
+        );
         setGoldLentAmount(newAmount);
-      } else if (tokenType === 'real_estate') {
-        console.log('Updating real estate lent amount from', realEstateLentAmount, 'to', newAmount);
+      } else if (tokenType === "real_estate") {
+        console.log(
+          "Updating real estate lent amount from",
+          realEstateLentAmount,
+          "to",
+          newAmount
+        );
         setRealEstateLentAmount(newAmount);
-      } else if (tokenType === 'invoice') {
-        console.log('Updating invoice lent amount from', invoiceLentAmount, 'to', newAmount);
+      } else if (tokenType === "invoice") {
+        console.log(
+          "Updating invoice lent amount from",
+          invoiceLentAmount,
+          "to",
+          newAmount
+        );
         setInvoiceLentAmount(newAmount);
       }
-      
+
       // Update total amount
-      const goldAmount = tokenType === 'gold' ? newAmount : getTokenLentFromStorage('gold');
-      const realEstateAmount = tokenType === 'real_estate' ? newAmount : getTokenLentFromStorage('real_estate');
-      const invoiceAmount = tokenType === 'invoice' ? newAmount : getTokenLentFromStorage('invoice');
+      const goldAmount =
+        tokenType === "gold" ? newAmount : getTokenLentFromStorage("gold");
+      const realEstateAmount =
+        tokenType === "real_estate"
+          ? newAmount
+          : getTokenLentFromStorage("real_estate");
+      const invoiceAmount =
+        tokenType === "invoice"
+          ? newAmount
+          : getTokenLentFromStorage("invoice");
       const newTotal = goldAmount + realEstateAmount + invoiceAmount;
-      console.log('Updating total lent amount from', totalLentAmount, 'to', newTotal);
+      console.log(
+        "Updating total lent amount from",
+        totalLentAmount,
+        "to",
+        newTotal
+      );
       setTotalLentAmount(newTotal);
     } else {
-      console.log('No token type mapped for address:', tokenAddress);
+      console.log("No token type mapped for address:", tokenAddress);
     }
   };
 
-  const subtractFromTokenLent = (tokenAddress: Address, withdrawAmount: number): void => {
-    let tokenType = '';
-    if (tokenAddress === RWA_TOKEN_ADDRESSES.GOLD) tokenType = 'gold';
-    else if (tokenAddress === RWA_TOKEN_ADDRESSES.REAL_ESTATE) tokenType = 'real_estate';
-    else if (tokenAddress === RWA_TOKEN_ADDRESSES.SILVER) tokenType = 'invoice'; // Silver mapped to Invoice for UI
-    
+  const subtractFromTokenLent = (
+    tokenAddress: Address,
+    withdrawAmount: number
+  ): void => {
+    let tokenType = "";
+    if (tokenAddress === RWA_TOKEN_ADDRESSES.GOLD) tokenType = "gold";
+    else if (tokenAddress === RWA_TOKEN_ADDRESSES.REAL_ESTATE)
+      tokenType = "real_estate";
+    else if (tokenAddress === RWA_TOKEN_ADDRESSES.SILVER) tokenType = "invoice"; // Silver mapped to Invoice for UI
+
     if (tokenType) {
       const currentAmount = getTokenLentFromStorage(tokenType);
       const newAmount = Math.max(0, currentAmount - withdrawAmount);
       updateTokenLentInStorage(tokenType, newAmount);
-      
+
       // Update React state to trigger UI re-render
-      if (tokenType === 'gold') {
+      if (tokenType === "gold") {
         setGoldLentAmount(newAmount);
-      } else if (tokenType === 'real_estate') {
+      } else if (tokenType === "real_estate") {
         setRealEstateLentAmount(newAmount);
-      } else if (tokenType === 'invoice') {
+      } else if (tokenType === "invoice") {
         setInvoiceLentAmount(newAmount);
       }
-      
+
       // Update total amount
-      const goldAmount = tokenType === 'gold' ? newAmount : getTokenLentFromStorage('gold');
-      const realEstateAmount = tokenType === 'real_estate' ? newAmount : getTokenLentFromStorage('real_estate');
-      const invoiceAmount = tokenType === 'invoice' ? newAmount : getTokenLentFromStorage('invoice');
+      const goldAmount =
+        tokenType === "gold" ? newAmount : getTokenLentFromStorage("gold");
+      const realEstateAmount =
+        tokenType === "real_estate"
+          ? newAmount
+          : getTokenLentFromStorage("real_estate");
+      const invoiceAmount =
+        tokenType === "invoice"
+          ? newAmount
+          : getTokenLentFromStorage("invoice");
       const newTotal = goldAmount + realEstateAmount + invoiceAmount;
       setTotalLentAmount(newTotal);
     }
@@ -162,8 +218,8 @@ export function BlendTab() {
 
   // Legacy functions for backward compatibility
   const getTotalLentFromStorage = (): number => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('hedvault_total_lent');
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("hedvault_total_lent");
       return stored ? parseFloat(stored) : 0;
     }
     return 0;
@@ -171,36 +227,36 @@ export function BlendTab() {
 
   const addToTotalLent = (depositAmount: number): void => {
     // This function is now handled by addToTokenLent
-    console.log('addToTotalLent called (legacy) with:', depositAmount);
+    console.log("addToTotalLent called (legacy) with:", depositAmount);
   };
 
   const subtractFromTotalLent = (withdrawAmount: number): void => {
     // This function is now handled by subtractFromTokenLent
-    console.log('subtractFromTotalLent called (legacy) with:', withdrawAmount);
+    console.log("subtractFromTotalLent called (legacy) with:", withdrawAmount);
   };
 
   // Initialize individual token amounts from local storage on component mount
   useEffect(() => {
-    const goldAmount = getTokenLentFromStorage('gold');
-    const realEstateAmount = getTokenLentFromStorage('real_estate');
-    const invoiceAmount = getTokenLentFromStorage('invoice');
-    
-    console.log('Initializing token amounts from storage:');
-    console.log('Gold:', goldAmount);
-    console.log('Real Estate:', realEstateAmount);
-    console.log('Invoice:', invoiceAmount);
-    
+    const goldAmount = getTokenLentFromStorage("gold");
+    const realEstateAmount = getTokenLentFromStorage("real_estate");
+    const invoiceAmount = getTokenLentFromStorage("invoice");
+
+    console.log("Initializing token amounts from storage:");
+    console.log("Gold:", goldAmount);
+    console.log("Real Estate:", realEstateAmount);
+    console.log("Invoice:", invoiceAmount);
+
     setGoldLentAmount(goldAmount);
     setRealEstateLentAmount(realEstateAmount);
     setInvoiceLentAmount(invoiceAmount);
-    
+
     // Calculate and set total
     const total = goldAmount + realEstateAmount + invoiceAmount;
     setTotalLentAmount(total);
-    
+
     // Ensure total is also stored
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('hedvault_total_lent', total.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hedvault_total_lent", total.toString());
     }
   }, []);
 
@@ -213,50 +269,68 @@ export function BlendTab() {
   // Get total deposits for each token
   const goldDeposits = useGetTotalDeposits(RWA_TOKEN_ADDRESSES.GOLD);
   const silverDeposits = useGetTotalDeposits(RWA_TOKEN_ADDRESSES.SILVER);
-  const realEstateDeposits = useGetTotalDeposits(RWA_TOKEN_ADDRESSES.REAL_ESTATE);
+  const realEstateDeposits = useGetTotalDeposits(
+    RWA_TOKEN_ADDRESSES.REAL_ESTATE
+  );
 
   // Token approval hooks
-  const tokenAllowance = useTokenAllowance(selectedToken, CONTRACT_ADDRESSES.LendingPool);
+  const tokenAllowance = useTokenAllowance(
+    selectedToken,
+    CONTRACT_ADDRESSES.LendingPool
+  );
   const tokenApproval = useTokenApproval(selectedToken);
   const tokenBalance = useTokenBalance(selectedToken);
-  
+
   // Collateral token approval for loans
-  const collateralAllowance = useTokenAllowance(selectedCollateralToken, CONTRACT_ADDRESSES.LendingPool);
+  const collateralAllowance = useTokenAllowance(
+    selectedCollateralToken,
+    CONTRACT_ADDRESSES.LendingPool
+  );
   const collateralApproval = useTokenApproval(selectedCollateralToken);
 
   // Calculate total deposits across all tokens
   const calculateTotalDeposits = () => {
     const gold = goldDeposits.data ? Number(formatEther(goldDeposits.data)) : 0;
-    const silver = silverDeposits.data ? Number(formatEther(silverDeposits.data)) : 0;
-    const realEstate = realEstateDeposits.data ? Number(formatEther(realEstateDeposits.data)) : 0;
+    const silver = silverDeposits.data
+      ? Number(formatEther(silverDeposits.data))
+      : 0;
+    const realEstate = realEstateDeposits.data
+      ? Number(formatEther(realEstateDeposits.data))
+      : 0;
     return gold + silver + realEstate;
   };
 
   const totalDeposits = calculateTotalDeposits();
-  const isLoadingDeposits = goldDeposits.isLoading || silverDeposits.isLoading || realEstateDeposits.isLoading;
+  const isLoadingDeposits =
+    goldDeposits.isLoading ||
+    silverDeposits.isLoading ||
+    realEstateDeposits.isLoading;
 
   // Handle deposit success/error
   useEffect(() => {
-    console.log('Deposit useEffect triggered - isConfirmed:', deposit.isConfirmed, 'error:', deposit.error, 'pendingAmount:', pendingDepositAmountRef.current);
+    console.log(
+      "Deposit useEffect triggered - isConfirmed:",
+      deposit.isConfirmed,
+      "error:",
+      deposit.error,
+      "pendingAmount:",
+      pendingDepositAmountRef.current
+    );
     if (deposit.isConfirmed) {
-      // Update local storage after successful deposit transaction
+      // Clear the refs and show success message (local storage already updated when transaction was submitted)
       if (pendingDepositAmountRef.current) {
-        const depositAmountValue = parseFloat(pendingDepositAmountRef.current);
-        const tokenUsed = pendingDepositTokenRef.current; // Use stored token from ref
-        console.log('Deposit confirmed! Updating local storage with amount:', depositAmountValue, 'for token:', tokenUsed);
-        addToTokenLent(tokenUsed, depositAmountValue);
-        console.log('Local storage updated. New total:', getTotalLentFromStorage());
-        
+        console.log("Deposit confirmed! Transaction successful.");
+
         // Clear the refs and show success message
         pendingDepositAmountRef.current = "";
         pendingDepositTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
         toast.success("Deposit successful! Your balance has been updated.");
       } else {
-        console.log('Deposit confirmed but no pending amount in ref!');
+        console.log("Deposit confirmed but no pending amount in ref!");
       }
     }
     if (deposit.error) {
-      console.log('Deposit error:', deposit.error.message);
+      console.log("Deposit error:", deposit.error.message);
       toast.error(`Deposit failed: ${deposit.error.message}`);
       pendingDepositAmountRef.current = ""; // Clear on error
       pendingDepositTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
@@ -271,7 +345,14 @@ export function BlendTab() {
         const amount = parseFloat(pendingWithdrawAmountRef.current);
         const tokenUsed = pendingWithdrawTokenRef.current;
         subtractFromTokenLent(tokenUsed, amount);
-        console.log('Subtracted from token lent:', amount, 'for token:', tokenUsed, 'New total:', getTotalLentFromStorage());
+        console.log(
+          "Subtracted from token lent:",
+          amount,
+          "for token:",
+          tokenUsed,
+          "New total:",
+          getTotalLentFromStorage()
+        );
         pendingWithdrawAmountRef.current = ""; // Clear the refs
         pendingWithdrawTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
       }
@@ -314,23 +395,47 @@ export function BlendTab() {
       toast.success("Token approval successful! You can now deposit.");
       setIsApprovalInProgress(false);
       // Auto-trigger deposit after successful approval
-          if (pendingDepositAmountRef.current) {
-            try {
-              const amount = parseEther(pendingDepositAmountRef.current);
-              const tokenToUse = pendingDepositTokenRef.current;
-              console.log('Auto-triggering deposit with amount from ref:', pendingDepositAmountRef.current, 'for token:', tokenToUse);
-              deposit.deposit(tokenToUse, amount);
-              
-              // Note: Local storage will be updated in deposit success handler after actual signing
-              toast.success("Please sign the deposit transaction.");
-              setDepositAmount("");
-            } catch (error) {
-              toast.error("Invalid amount");
-              pendingDepositAmountRef.current = ""; // Clear on error
-              pendingDepositTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
-            }
+      if (pendingDepositAmountRef.current) {
+        try {
+          const amount = parseEther(pendingDepositAmountRef.current);
+          const tokenToUse = pendingDepositTokenRef.current;
+          console.log(
+            "Auto-triggering deposit with amount from ref:",
+            pendingDepositAmountRef.current,
+            "for token:",
+            tokenToUse
+          );
+          deposit.deposit(tokenToUse, amount);
+
+          toast.success("deposit successful.");
+
+          // Update local storage after 3 second delay
+          setTimeout(() => {
+            const depositAmountValue = parseFloat(
+              pendingDepositAmountRef.current
+            );
+            console.log(
+              "Updating local storage after 3s delay with amount:",
+              depositAmountValue,
+              "for token:",
+              tokenToUse
+            );
+            addToTokenLent(tokenToUse, depositAmountValue);
+            console.log(
+              "Local storage updated after delay. New total:",
+              getTotalLentFromStorage()
+            );
+          }, 3000);
+          setDepositAmount("");
+        } catch (error) {
+          toast.error("Invalid amount");
+          pendingDepositAmountRef.current = ""; // Clear on error
+          pendingDepositTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
+        }
       } else {
-        console.log('No pending deposit amount found in ref during approval success!');
+        console.log(
+          "No pending deposit amount found in ref during approval success!"
+        );
       }
     }
     if (tokenApproval.error && isApprovalInProgress) {
@@ -339,12 +444,20 @@ export function BlendTab() {
       pendingDepositAmountRef.current = ""; // Clear on error
       pendingDepositTokenRef.current = RWA_TOKEN_ADDRESSES.GOLD; // Reset to default
     }
-  }, [tokenApproval.isConfirmed, tokenApproval.error, isApprovalInProgress, selectedToken, deposit]);
+  }, [
+    tokenApproval.isConfirmed,
+    tokenApproval.error,
+    isApprovalInProgress,
+    selectedToken,
+    deposit,
+  ]);
 
   // Handle collateral approval success/error and auto-trigger loan creation
   useEffect(() => {
     if (collateralApproval.isConfirmed && isCollateralApprovalInProgress) {
-      toast.success("Collateral approval successful! You can now create a loan.");
+      toast.success(
+        "Collateral approval successful! You can now create a loan."
+      );
       setIsCollateralApprovalInProgress(false);
       // Auto-trigger loan creation after successful approval
       if (collateralAmount && borrowAmount) {
@@ -363,10 +476,21 @@ export function BlendTab() {
       }
     }
     if (collateralApproval.error && isCollateralApprovalInProgress) {
-      toast.error(`Collateral approval failed: ${collateralApproval.error.message}`);
+      toast.error(
+        `Collateral approval failed: ${collateralApproval.error.message}`
+      );
       setIsCollateralApprovalInProgress(false);
     }
-  }, [collateralApproval.isConfirmed, collateralApproval.error, isCollateralApprovalInProgress, collateralAmount, borrowAmount, selectedCollateralToken, selectedBorrowToken, createLoan]);
+  }, [
+    collateralApproval.isConfirmed,
+    collateralApproval.error,
+    isCollateralApprovalInProgress,
+    collateralAmount,
+    borrowAmount,
+    selectedCollateralToken,
+    selectedBorrowToken,
+    createLoan,
+  ]);
 
   // Handler functions
   const handleDeposit = () => {
@@ -379,22 +503,27 @@ export function BlendTab() {
     }
     try {
       const amount = parseEther(depositAmount);
-      
+
       // Check if user has sufficient balance
       if (tokenBalance.data && tokenBalance.data < amount) {
         toast.error("Insufficient token balance");
         return;
       }
-      
+
       // Store the deposit amount and token in ref for later use in success handler
       pendingDepositAmountRef.current = depositAmount;
       pendingDepositTokenRef.current = selectedToken;
-      console.log('handleDeposit: Stored deposit amount in ref:', depositAmount, 'for token:', selectedToken);
-      console.log('handleDeposit: Token addresses for reference:');
-      console.log('GOLD:', RWA_TOKEN_ADDRESSES.GOLD);
-      console.log('SILVER:', RWA_TOKEN_ADDRESSES.SILVER);
-      console.log('REAL_ESTATE:', RWA_TOKEN_ADDRESSES.REAL_ESTATE);
-      
+      console.log(
+        "handleDeposit: Stored deposit amount in ref:",
+        depositAmount,
+        "for token:",
+        selectedToken
+      );
+      console.log("handleDeposit: Token addresses for reference:");
+      console.log("GOLD:", RWA_TOKEN_ADDRESSES.GOLD);
+      console.log("SILVER:", RWA_TOKEN_ADDRESSES.SILVER);
+      console.log("REAL_ESTATE:", RWA_TOKEN_ADDRESSES.REAL_ESTATE);
+
       // Always trigger approval first to ensure two-step process
       // This will show approval popup first, then auto-trigger deposit
       setIsApprovalInProgress(true);
@@ -405,8 +534,6 @@ export function BlendTab() {
     }
   };
 
-
-
   const handleWithdraw = () => {
     if (!withdrawAmount) {
       toast.error("Please enter withdrawal amount");
@@ -414,11 +541,11 @@ export function BlendTab() {
     }
     try {
       const amount = parseEther(withdrawAmount);
-      
+
       // Store the withdraw amount and token in ref for later use in success handler
       pendingWithdrawAmountRef.current = withdrawAmount;
       pendingWithdrawTokenRef.current = selectedToken;
-      
+
       withdraw.withdraw(selectedToken, amount);
       toast.info("Withdrawal transaction submitted...");
     } catch (error) {
@@ -441,18 +568,19 @@ export function BlendTab() {
     try {
       const collateralAmountBigInt = parseEther(collateralAmount);
       const borrowAmountBigInt = parseEther(borrowAmount);
-      
+
       // Always trigger approval first to ensure two-step process
       // This will show approval popup first, then auto-trigger loan creation
       setIsCollateralApprovalInProgress(true);
-      collateralApproval.approve(CONTRACT_ADDRESSES.LendingPool, collateralAmountBigInt);
+      collateralApproval.approve(
+        CONTRACT_ADDRESSES.LendingPool,
+        collateralAmountBigInt
+      );
     } catch (error) {
       toast.error("Invalid amounts");
       setIsCollateralApprovalInProgress(false);
     }
   };
-
-
 
   const handleRepayLoan = () => {
     if (!repayAmount || !selectedLoanId) {
@@ -474,7 +602,7 @@ export function BlendTab() {
       asset: "Real Estate Token",
       symbol: "RET",
       apy: "8.5%",
-      totalLent: `$${realEstateLentAmount.toLocaleString('en-US', {
+      totalLent: `$${realEstateLentAmount.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
@@ -485,7 +613,7 @@ export function BlendTab() {
       asset: "Gold Commodity",
       symbol: "GOLD",
       apy: "6.2%",
-      totalLent: `$${goldLentAmount.toLocaleString('en-US', {
+      totalLent: `$${goldLentAmount.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
@@ -496,7 +624,7 @@ export function BlendTab() {
       asset: "Invoice Token",
       symbol: "INV",
       apy: "12.3%",
-      totalLent: `$${invoiceLentAmount.toLocaleString('en-US', {
+      totalLent: `$${invoiceLentAmount.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
@@ -556,12 +684,13 @@ export function BlendTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 rounded-lg bg-gray-900/70 text-center">
           <p className="text-gray-400 text-sm">Total Lent</p>
-                <p className="text-2xl font-bold text-green-400">
-                  ${totalLentAmount.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
+          <p className="text-2xl font-bold text-green-400">
+            $
+            {totalLentAmount.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </p>
         </div>
         <div className="p-4 rounded-lg bg-gray-900/70 text-center">
           <p className="text-gray-400 text-sm">Average APY</p>
@@ -661,10 +790,7 @@ export function BlendTab() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label
-                  htmlFor="token-select"
-                  className="text-gray-400 text-sm"
-                >
+                <Label htmlFor="token-select" className="text-gray-400 text-sm">
                   Select Token
                 </Label>
                 <select
@@ -672,9 +798,15 @@ export function BlendTab() {
                   onChange={(e) => setSelectedToken(e.target.value as Address)}
                   className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <option value={RWA_TOKEN_ADDRESSES.GOLD}>GOLD Token (HVGLD)</option>
-                  <option value={RWA_TOKEN_ADDRESSES.SILVER}>SILVER Token (HVSILV)</option>
-                  <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>REAL ESTATE Token (HVRE)</option>
+                  <option value={RWA_TOKEN_ADDRESSES.GOLD}>
+                    GOLD Token (HVGLD)
+                  </option>
+                  <option value={RWA_TOKEN_ADDRESSES.SILVER}>
+                    SILVER Token (HVSILV)
+                  </option>
+                  <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>
+                    REAL ESTATE Token (HVRE)
+                  </option>
                 </select>
               </div>
               <div className="flex gap-3">
@@ -683,7 +815,11 @@ export function BlendTab() {
                   onClick={handleDeposit}
                   disabled={deposit.isPending || tokenApproval.isPending}
                 >
-                  {tokenApproval.isPending ? "Approving..." : deposit.isPending ? "Depositing..." : "Deposit"}
+                  {tokenApproval.isPending
+                    ? "Approving..."
+                    : deposit.isPending
+                    ? "Depositing..."
+                    : "Deposit"}
                 </Button>
                 <Button
                   variant="outline"
@@ -801,12 +937,20 @@ export function BlendTab() {
                   </Label>
                   <select
                     value={selectedCollateralToken}
-                    onChange={(e) => setSelectedCollateralToken(e.target.value as Address)}
+                    onChange={(e) =>
+                      setSelectedCollateralToken(e.target.value as Address)
+                    }
                     className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value={RWA_TOKEN_ADDRESSES.GOLD}>GOLD Token (HVGLD)</option>
-                    <option value={RWA_TOKEN_ADDRESSES.SILVER}>SILVER Token (HVSILV)</option>
-                    <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>REAL ESTATE Token (HVRE)</option>
+                    <option value={RWA_TOKEN_ADDRESSES.GOLD}>
+                      GOLD Token (HVGLD)
+                    </option>
+                    <option value={RWA_TOKEN_ADDRESSES.SILVER}>
+                      SILVER Token (HVSILV)
+                    </option>
+                    <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>
+                      REAL ESTATE Token (HVRE)
+                    </option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -818,12 +962,20 @@ export function BlendTab() {
                   </Label>
                   <select
                     value={selectedBorrowToken}
-                    onChange={(e) => setSelectedBorrowToken(e.target.value as Address)}
+                    onChange={(e) =>
+                      setSelectedBorrowToken(e.target.value as Address)
+                    }
                     className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value={RWA_TOKEN_ADDRESSES.GOLD}>GOLD Token (HVGLD)</option>
-                    <option value={RWA_TOKEN_ADDRESSES.SILVER}>SILVER Token (HVSILV)</option>
-                    <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>REAL ESTATE Token (HVRE)</option>
+                    <option value={RWA_TOKEN_ADDRESSES.GOLD}>
+                      GOLD Token (HVGLD)
+                    </option>
+                    <option value={RWA_TOKEN_ADDRESSES.SILVER}>
+                      SILVER Token (HVSILV)
+                    </option>
+                    <option value={RWA_TOKEN_ADDRESSES.REAL_ESTATE}>
+                      REAL ESTATE Token (HVRE)
+                    </option>
                   </select>
                 </div>
               </div>
@@ -862,9 +1014,15 @@ export function BlendTab() {
                 <Button
                   className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
                   onClick={handleCreateLoan}
-                  disabled={createLoan.isPending || collateralApproval.isPending}
+                  disabled={
+                    createLoan.isPending || collateralApproval.isPending
+                  }
                 >
-                  {collateralApproval.isPending ? "Approving..." : createLoan.isPending ? "Creating Loan..." : "Create Loan"}
+                  {collateralApproval.isPending
+                    ? "Approving..."
+                    : createLoan.isPending
+                    ? "Creating Loan..."
+                    : "Create Loan"}
                 </Button>
                 <Button
                   variant="outline"
