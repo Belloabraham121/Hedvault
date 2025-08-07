@@ -24,18 +24,21 @@ HedVault consists of 10 specialized smart contracts working together to provide:
 ## 🚀 Key Features
 
 ### 💼 For Asset Managers
+
 - **Professional Trading Tools**: Advanced order books, market making, and price discovery
 - **Portfolio Analytics**: Real-time performance tracking, risk scoring, and attribution analysis
 - **Compliance Dashboard**: Automated regulatory reporting and monitoring
 - **Cross-Chain Management**: Unified interface for multi-chain asset management
 
 ### 🏦 For Individual Investors
+
 - **Easy RWA Access**: Fractional ownership of real estate, commodities, and other assets
 - **Automated Strategies**: AI-powered portfolio rebalancing and optimization
 - **Lending Services**: Borrow against RWA holdings with competitive rates
 - **Mobile-First Design**: Intuitive interface for retail investors
 
 ### 🏭 For Asset Issuers
+
 - **Streamlined Tokenization**: One-click asset tokenization with compliance built-in
 - **Instant Distribution**: Direct access to qualified investor network
 - **Regulatory Automation**: Automated compliance checks and reporting
@@ -51,29 +54,33 @@ HedVault consists of 10 specialized smart contracts working together to provide:
 ## 🛠️ Technology Stack
 
 ### Smart Contracts
+
 - **Language**: Solidity ^0.8.20
 - **Framework**: OpenZeppelin v5 (AccessControl, ReentrancyGuard, Pausable)
 - **Architecture**: Modular design with upgradeable contracts
 - **Security**: Multi-signature validation, emergency controls, comprehensive testing
 
 ### Development Tools
+
 - **Build System**: Foundry for compilation, testing, and deployment
 - **Testing**: Comprehensive test suite with >95% coverage
 - **Security**: Static analysis with Slither, formal verification ready
 - **Documentation**: NatSpec comments throughout codebase
 
 ### Supported Networks
+
 - Ethereum Mainnet (Primary)
 - Polygon (Layer 2 scaling)
 - Avalanche (Alternative L1)
 - Hedera (Enterprise focus)
-- *Additional chains via governance*
+- _Additional chains via governance_
 
 ## 🏗️ Contract Architecture
 
 ### Core Contracts
 
 #### 1. **HedVaultCore** - Protocol Coordinator
+
 Central hub managing all protocol modules, fees, and governance.
 
 ```solidity
@@ -84,6 +91,7 @@ function getProtocolFee(string calldata operation) external view returns (uint25
 ```
 
 #### 2. **RWATokenFactory** - Asset Tokenization
+
 Creates compliant ERC20 tokens representing real-world assets.
 
 ```solidity
@@ -97,6 +105,7 @@ function createRWAToken(
 ```
 
 #### 3. **Marketplace** - Professional Trading
+
 Advanced DEX with order books, auctions, and institutional features.
 
 ```solidity
@@ -112,6 +121,7 @@ function createOrder(
 ```
 
 #### 4. **LendingPool** - Collateralized Lending
+
 Dynamic lending protocol with RWA-specific risk models.
 
 ```solidity
@@ -144,12 +154,14 @@ function createLoan(
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/your-org/hedvault.git
 cd hedvault
 ```
 
 2. **Install dependencies**
+
 ```bash
 # Install Foundry dependencies
 forge install
@@ -159,6 +171,7 @@ npm install
 ```
 
 3. **Set up environment**
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
@@ -167,11 +180,13 @@ cp .env.example .env
 ### Local Development
 
 1. **Compile contracts**
+
 ```bash
 forge build
 ```
 
 2. **Run tests**
+
 ```bash
 # Run all tests
 forge test
@@ -184,6 +199,7 @@ forge coverage
 ```
 
 3. **Start local network**
+
 ```bash
 # Start Anvil (local Ethereum node)
 anvil
@@ -402,21 +418,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **Website**: https://hedvault.io
-- **Documentation**: https://docs.hedvault.io
-- **Discord**: https://discord.gg/hedvault
-- **Twitter**: https://twitter.com/hedvault
-- **Telegram**: https://t.me/hedvault
+- **Website**: https://hedvault.vercel.app/
+- **Pitch Deck**: [View HedVault Pitch Deck](https://www.canva.com/design/DAGvXZsAatM/6V_g_Y3kann2kHqre3Um9Q/edit?utm_content=DAGvXZsAatM&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+- ***
 
-## 📞 Contact
+  **Built with ❤️ for the future of decentralized finance**
 
-- **General**: hello@hedvault.io
-- **Technical**: dev@hedvault.io
-- **Security**: security@hedvault.io
-- **Partnerships**: partnerships@hedvault.io
-
----
-
-**Built with ❤️ for the future of decentralized finance**
-
-*Making every valuable real-world asset as liquid and accessible as Bitcoin.*
+_Making every valuable real-world asset as liquid and accessible as Bitcoin._
